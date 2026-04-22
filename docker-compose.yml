@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+
+  postgres-crm:
+    image: postgres
+    container_name: postgres-crm
+    environment:
+      POSTGRES_DB: crm_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+
+  postgres-project:
+    image: postgres
+    container_name: postgres-project
+    environment:
+      POSTGRES_DB: project_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+
+  postgres-quotation:
+    image: postgres
+    container_name: postgres-quotation
+    environment:
+      POSTGRES_DB: quotation_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+
+  postgres-permit:
+    image: postgres
+    container_name: postgres-permit
+    environment:
+      POSTGRES_DB: permit_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+
+  postgres-billing:
+    image: postgres
+    container_name: postgres-billing
+    environment:
+      POSTGRES_DB: billing_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5438:5432"
+
+  postgres-client-portal:
+    image: postgres
+    container_name: postgres-client-portal
+    environment:
+      POSTGRES_DB: client_portal_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5439:5432"
+
+  postgres-analytics:
+    image: postgres
+    container_name: postgres-analytics
+    environment:
+      POSTGRES_DB: analytics_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5440:5432"
+
+  postgres-monitoring:
+    image: postgres
+    container_name: postgres-monitoring
+    environment:
+      POSTGRES_DB: monitoring_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5441:5432"
+
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
