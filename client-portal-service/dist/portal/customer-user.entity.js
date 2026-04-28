@@ -16,6 +16,16 @@ let CustomerUser = class CustomerUser {
     name;
     email;
     password_hash;
+    phone;
+    address;
+    avatar_url;
+    reset_code;
+    reset_expires_at;
+    failed_login_attempts;
+    login_locked_until;
+    failed_reset_attempts;
+    reset_locked_until;
+    unlock_token;
     created_at;
 };
 exports.CustomerUser = CustomerUser;
@@ -35,6 +45,46 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], CustomerUser.prototype, "password_hash", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], CustomerUser.prototype, "phone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], CustomerUser.prototype, "address", void 0);
+__decorate([
+    (0, typeorm_1.Column)('text', { nullable: true }),
+    __metadata("design:type", String)
+], CustomerUser.prototype, "avatar_url", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], CustomerUser.prototype, "reset_code", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], CustomerUser.prototype, "reset_expires_at", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], CustomerUser.prototype, "failed_login_attempts", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], CustomerUser.prototype, "login_locked_until", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], CustomerUser.prototype, "failed_reset_attempts", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], CustomerUser.prototype, "reset_locked_until", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], CustomerUser.prototype, "unlock_token", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
