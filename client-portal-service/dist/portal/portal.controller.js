@@ -54,7 +54,7 @@ let PortalController = class PortalController {
         return this.portalService.getProfile(email);
     }
     updateContact(body) {
-        return this.portalService.updateContact(body.email, body.phone, body.address);
+        return this.portalService.updateContact(body.email, body.phone, body.address, body.name);
     }
     updatePassword(body) {
         return this.portalService.updatePassword(body.email, body.currentPass, body.newPass);

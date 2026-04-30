@@ -188,10 +188,12 @@ let PortalService = class PortalService {
             avatar_url: user.avatar_url
         };
     }
-    async updateContact(email, phone, address) {
+    async updateContact(email, phone, address, name) {
         const user = await this.userRepo.findOne({ where: { email } });
         if (!user)
             throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
+        if (name !== undefined)
+            user.name = name;
         user.phone = phone;
         user.address = address;
         await this.userRepo.save(user);

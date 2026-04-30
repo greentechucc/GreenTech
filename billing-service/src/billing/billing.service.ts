@@ -91,6 +91,7 @@ export class BillingService {
   }
 
   async remove(id: number) {
+    await this.paymentRepo.delete({ invoice_id: id });
     await this.invoiceRepo.delete(id);
     return { deleted: true };
   }

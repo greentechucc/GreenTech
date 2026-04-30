@@ -194,9 +194,10 @@ export class PortalService {
     };
   }
 
-  async updateContact(email: string, phone: string, address: string) {
+  async updateContact(email: string, phone: string, address: string, name?: string) {
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (name !== undefined) user.name = name;
     user.phone = phone;
     user.address = address;
     await this.userRepo.save(user);

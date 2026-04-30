@@ -11,6 +11,6 @@ export const startRedisListener = (projectService: ProjectService) => {
 
     console.log('Evento recibido:', data);
 
-    await projectService.createProject(data);
+    // await projectService.createProject(data);
   });
 };

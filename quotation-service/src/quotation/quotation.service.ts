@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Quotation } from './quotation.entity';
 import { InventoryItem } from '../inventory/inventory.entity';
 import { Repository } from 'typeorm';
+import * as nodemailer from 'nodemailer';
 
 interface BomLine {
   sku: string;
@@ -202,6 +203,7 @@ export class QuotationService {
 
     const quotation = this.repo.create({
       customer_name: data.customer_name,
+      customer_email: data.customer_email || '',
       consumo_kwh: consumo,
       system_size_kwp,
       panel_count,
@@ -225,6 +227,7 @@ export class QuotationService {
     if (!quotation) return null;
 
     if (data.customer_name) quotation.customer_name = data.customer_name;
+    if (data.customer_email !== undefined) quotation.customer_email = data.customer_email;
     if (data.status) quotation.status = data.status;
     
     if (data.consumo) {
@@ -246,5 +249,59 @@ export class QuotationService {
   async remove(id: number) {
     await this.repo.delete(id);
     return { deleted: true };
+  }
+
+  async sendEmail(id: number) {
+    try {
+      const quotation = await this.repo.findOneBy({ id });
+      if (!quotation || !quotation.customer_email) throw new Error("Cotización o email no encontrados");
+
+      // Hardcoded Ethereal fake SMTP account for stability and speed
+      const testAccount = { user: 'klg5vrep2zonlg2w@ethereal.email', pass: 'NfHqM4gStKCHyq69k9' };
+      const transporter = nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+
+      const htmlTemplate = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 10px;">
+          <h2 style="color: #10b981;">GreenTech Solutions</h2>
+          <p>Hola <strong>${quotation.customer_name}</strong>,</p>
+          <p>Nos complace presentarte la propuesta comercial oficial para la transición energética de tus instalaciones.</p>
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Tamaño del Sistema:</strong> ${quotation.system_size_kwp.toFixed(2)} kWp</p>
+            <p style="margin: 5px 0 0 0;"><strong>Impacto Ambiental:</strong> Evitarás la emisión de ${quotation.co2_saved_tons} Tons de CO2 al año</p>
+            <p style="margin: 5px 0 0 0;"><strong>Retorno de Inversión Estimado:</strong> ${quotation.roi_years} años</p>
+          </div>
+          <p><em>(El PDF adjunto se envía por un canal distinto en esta simulación, pero el flujo real inyectaría el buffer PDF aquí)</em></p>
+          <p>Un asesor se pondrá en contacto pronto para resolver cualquier duda y proceder a la etapa de ingeniería de diseño.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #64748b;">Este es un flujo 100% automático propulsado vía Nodemailer usando Ethereal para testing.</p>
+        </div>
+      `;
+
+      const info = await transporter.sendMail({
+        from: '"GreenTech Energía Inteligente" <cotizaciones@greentech.app>',
+        to: quotation.customer_email,
+        subject: `Tu Proyecto Solar GreenTech: ${quotation.customer_name}`,
+        html: htmlTemplate,
+      });
+
+      quotation.status = 'SENT';
+      await this.repo.save(quotation);
+
+      return { 
+        success: true, 
+        preview_url: nodemailer.getTestMessageUrl(info), 
+        email: quotation.customer_email 
+      };
+    } catch (error: any) {
+      return { success: false, error: error.message, stack: error.stack };
+    }
   }
 }

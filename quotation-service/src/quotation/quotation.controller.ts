@@ -23,6 +23,11 @@ export class QuotationController {
     return this.service.update(Number(id), body);
   }
 
+  @Post(':id/send-email')
+  sendEmail(@Param('id') id: string) {
+    return this.service.sendEmail(Number(id));
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(Number(id));

@@ -36,6 +36,12 @@ export class Project {
   @Column({ type: 'timestamp', nullable: true })
   planned_end_date: Date | null;
 
+  @Column({ type: 'text', nullable: true })
+  tasks: string;
+
+  @Column({ type: 'text', nullable: true })
+  bom_json: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

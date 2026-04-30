@@ -16,9 +16,19 @@ export class ProjectController {
     return this.service.createProject(body);
   }
 
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.service.findOne(Number(id));
+  }
+
   @Put(':id')
   update(@Param('id') id: string, @Body() body: any) {
     return this.service.update(Number(id), body);
+  }
+
+  @Put(':id/tasks')
+  updateTasks(@Param('id') id: string, @Body() body: { tasks: any[] }) {
+    return this.service.updateTasks(Number(id), body.tasks);
   }
 
   @Delete(':id')

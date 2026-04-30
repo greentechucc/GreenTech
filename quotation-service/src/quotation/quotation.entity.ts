@@ -9,6 +9,9 @@ export class Quotation {
   @Column()
   customer_name: string;
 
+  @Column({ nullable: true })
+  customer_email: string;
+
   @Column()
   consumo_kwh: number;
 

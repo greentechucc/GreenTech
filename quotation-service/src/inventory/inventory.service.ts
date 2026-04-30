@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InventoryItem } from './inventory.entity';
+import Redis from 'ioredis';
 
 const SEED_DATA: Partial<InventoryItem>[] = [
   // Paneles Solares
@@ -46,10 +47,14 @@ const SEED_DATA: Partial<InventoryItem>[] = [
 
 @Injectable()
 export class InventoryService implements OnModuleInit {
+  private redisSub: Redis;
+
   constructor(
     @InjectRepository(InventoryItem)
     private repo: Repository<InventoryItem>,
-  ) {}
+  ) {
+    this.redisSub = new Redis();
+  }
 
   async onModuleInit() {
     let inserted = 0;
@@ -62,6 +67,51 @@ export class InventoryService implements OnModuleInit {
     }
     if (inserted > 0) {
       console.log(`✅ Inventario solar: ${inserted} productos nuevos agregados (total seed: ${SEED_DATA.length})`);
+    }
+
+    // Subscribe to inventory deduction events
+    this.redisSub.subscribe('inventory.deduct');
+    this.redisSub.on('message', async (channel, message) => {
+      if (channel === 'inventory.deduct') {
+        try {
+          const payload = JSON.parse(message);
+          if (payload.bom_json) {
+            const bom = JSON.parse(payload.bom_json);
+            console.log(`[Inventory] Deducting stock for project ${payload.projectId}`);
+            for (const item of bom) {
+              const invItem = await this.repo.findOne({ where: { sku: item.sku } });
+              if (invItem) {
+                invItem.stock = Math.max(0, invItem.stock - item.quantity);
+                await this.repo.save(invItem);
+                console.log(`[Inventory] Deducted ${item.quantity} of ${invItem.sku}`);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('[Inventory] Error processing deduction', e);
+        }
+      }
+    });
+  }
+
+  async deductBom(bomJson: string) {
+    if (!bomJson) return { success: false, error: 'No BOM provided' };
+    try {
+      const bomData = typeof bomJson === 'string' ? JSON.parse(decodeURIComponent(bomJson)) : bomJson;
+      const bom = typeof bomData === 'string' ? JSON.parse(bomData) : bomData;
+      console.log(`[Inventory HTTP] Deducting stock`);
+      for (const item of bom) {
+        const invItem = await this.repo.findOne({ where: { sku: item.sku } });
+        if (invItem) {
+          invItem.stock = Math.max(0, invItem.stock - item.quantity);
+          await this.repo.save(invItem);
+          console.log(`[Inventory] Deducted ${item.quantity} of ${invItem.sku}`);
+        }
+      }
+      return { success: true };
+    } catch (e) {
+      console.error('[Inventory] Error parsing HTTP BOM deduction', e);
+      return { success: false, error: e.message };
     }
   }
 

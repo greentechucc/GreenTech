@@ -97,6 +97,7 @@ let BillingService = BillingService_1 = class BillingService {
         return this.invoiceRepo.save(invoice);
     }
     async remove(id) {
+        await this.paymentRepo.delete({ invoice_id: id });
         await this.invoiceRepo.delete(id);
         return { deleted: true };
     }

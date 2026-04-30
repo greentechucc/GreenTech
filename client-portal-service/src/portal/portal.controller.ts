@@ -61,8 +61,8 @@ export class PortalController {
   }
 
   @Put('profile/contact')
-  updateContact(@Body() body: { email: string; phone: string; address: string }) {
-    return this.portalService.updateContact(body.email, body.phone, body.address);
+  updateContact(@Body() body: { email: string; phone: string; address: string; name?: string }) {
+    return this.portalService.updateContact(body.email, body.phone, body.address, body.name);
   }
 
   @Put('profile/password')

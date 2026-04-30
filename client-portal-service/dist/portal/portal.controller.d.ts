@@ -47,6 +47,7 @@ export declare class PortalController {
         email: string;
         phone: string;
         address: string;
+        name?: string;
     }): Promise<{
         success: boolean;
     }>;

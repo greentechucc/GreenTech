@@ -45,6 +45,11 @@ export class GatewayController {
     return this.createProxy('http://localhost:3002', '/quotation')(req, res);
   }
 
+  @All('inventory/*path')
+  async proxyInventory(@Req() req: Request, @Res() res: Response) {
+    return this.createProxy('http://localhost:3002', '/inventory')(req, res);
+  }
+
   @All('projects/*path')
   async proxyProjects(@Req() req: Request, @Res() res: Response) {
     return this.createProxy('http://localhost:3003', '/projects')(req, res);

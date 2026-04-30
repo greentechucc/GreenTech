@@ -20,6 +20,11 @@ export class InventoryController {
     return this.inventoryService.create(data);
   }
 
+  @Post('deduct/bom')
+  deductBom(@Body() body: { bom_json: string }) {
+    return this.inventoryService.deductBom(body.bom_json);
+  }
+
   @Patch(':id/stock')
   addStock(@Param('id') id: string, @Body() body: { quantity: number }) {
     return this.inventoryService.addStock(+id, body.quantity);

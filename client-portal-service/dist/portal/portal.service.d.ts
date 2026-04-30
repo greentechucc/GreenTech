@@ -48,7 +48,7 @@ export declare class PortalService {
         address: string;
         avatar_url: string;
     }>;
-    updateContact(email: string, phone: string, address: string): Promise<{
+    updateContact(email: string, phone: string, address: string, name?: string): Promise<{
         success: boolean;
     }>;
     updatePassword(email: string, currentPass: string, newPass: string): Promise<{

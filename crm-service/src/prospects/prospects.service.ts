@@ -59,7 +59,7 @@ export class ProspectsService {
     }
 
     // ✅ 1. Cambiar estado
-    prospect.status = 'convertido';
+    prospect.status = 'WON';
     await this.repo.save(prospect);
 
     // ✅ 2. Generar Customer Profile
