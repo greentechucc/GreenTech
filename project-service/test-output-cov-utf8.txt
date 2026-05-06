@@ -1,0 +1,103 @@
+﻿
+> project-service@0.0.1 test:cov
+> jest --coverage
+
+node.exe : PASS src/project/pro
+ject.service.spec.ts
+En C:\Program 
+Files\nodejs\npm.ps1: 29 
+Carácter: 3
++   & $NODE_EXE $NPM_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          :  
+   NotSpecified: (PASS src/pr  
+  oject/project.service.spec   
+ .ts:String) [], RemoteExce    
+ption
+    + FullyQualifiedErrorId :  
+   NativeCommandError
+ 
+  ÔùÅ Console
+
+    console.warn
+      HTTP inventory deduct 
+failed, fallback to Redis 
+Network error
+
+    [0m [90m 73 |[39m       
+    [36mawait[39m axios[33m.
+[39mpost([32m'http://localhos
+t:3002/inventory/deduct/bom'[3
+9m[33m,[39m { 
+bom_json[33m:[39m 
+project[33m.[39mbom_json 
+})[33m;[39m
+     [90m 74 |[39m         } 
+[36mcatch[39m (e) {
+    [31m[1m>[22m[39m[90m 
+75 |[39m            console[3
+3m.[39mwarn([32m'HTTP 
+inventory deduct failed, 
+fallback to 
+Redis'[39m[33m,[39m 
+e[33m.[39mmessage)[33m;[39m
+     [90m    |[39m           
+         [31m[1m^[22m[39m
+     [90m 76 |[39m           
+ [36mthis[39m[33m.[39mredis
+Client[33m.[39mpublish([32m'
+inventory.deduct'[39m[33m,[3
+9m [33mJSON[39m[33m.[39mstr
+ingify({
+     [90m 77 |[39m           
+   projectId[33m:[39m 
+project[33m.[39mid[33m,[39m
+     [90m 78 |[39m           
+   bom_json[33m:[39m project
+[33m.[39mbom_json[33m,[39m[
+0m
+
+      at ProjectService.warn 
+[as updateTasks] (project/proje
+ct.service.ts:75:20)
+      at Object.<anonymous> (pr
+oject/project.service.spec.ts:1
+05:5)
+
+PASS src/project/project.integr
+ation.spec.ts
+A worker process has failed to 
+exit gracefully and has been 
+force exited. This is likely 
+caused by tests leaking due to 
+improper teardown. Try running 
+with --detectOpenHandles to 
+find leaks. Active timers can 
+also cause this, ensure that 
+.unref() was called on them.
+------------------------|---------|----------|---------|---------|-------------------
+File                    | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+------------------------|---------|----------|---------|---------|-------------------
+All files               |   60.51 |    62.93 |   58.06 |   67.97 |                   
+ src                    |       0 |        0 |       0 |       0 |                   
+  app.controller.ts     |       0 |        0 |       0 |       0 | 1-10              
+  app.module.ts         |       0 |      100 |     100 |       0 | 1-26              
+  app.service.ts        |       0 |      100 |       0 |       0 | 1-6               
+  main.ts               |       0 |      100 |       0 |       0 | 1-14              
+ src/project            |   71.51 |    65.17 |   66.66 |   80.62 |                   
+  incident.entity.ts    |   85.71 |       75 |       0 |    90.9 | 12                
+  project.controller.ts |    87.5 |       75 |      70 |   86.36 | 31,46,51          
+  project.entity.ts     |     100 |       75 |     100 |     100 | 46                
+  project.module.ts     |       0 |      100 |     100 |       0 | 1-15              
+  project.service.ts    |   72.82 |    63.54 |   84.61 |   89.39 | 97,144-153        
+  redis.listener.ts     |       0 |      100 |       0 |       0 | 1-12              
+------------------------|---------|----------|---------|---------|-------------------
+
+Test Suites: 2 passed, 2 total
+Tests:       12 passed, 12 
+total
+Snapshots:   0 total
+Time:        4.145 s
+Ran all test suites.
