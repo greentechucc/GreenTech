@@ -32,6 +32,7 @@ describe('ProjectController (e2e) Integration', () => {
 
   const incidentRepoMock = {
     find: jest.fn().mockResolvedValue([{ id: 1, description: 'Test Incident' }]),
+    findOneBy: jest.fn().mockResolvedValue({ id: 1, description: 'Test Incident', status: 'PENDING' }),
     create: jest.fn().mockImplementation((dto) => dto),
     save: jest.fn().mockImplementation((dto) => Promise.resolve({ id: 1, ...dto })),
   };
