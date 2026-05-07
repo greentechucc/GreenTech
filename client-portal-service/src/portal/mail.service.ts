@@ -9,8 +9,8 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'greentechucc@gmail.com',
-        pass: 'xxjx tmwn wlhy lznc',
+        user: process.env.SMTP_USER || 'greentechucc@gmail.com',
+        pass: process.env.SMTP_PASS || 'invalidated_pass', // Avoid 535 errors crashing the UX
       },
     });
   }

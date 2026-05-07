@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/mock-users';
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/ui/Modal';
+import api from '@/services/api';
 
 interface Ticket {
   id: string;
@@ -47,11 +48,8 @@ export default function SoporteAdminPage() {
 
   const fetchTickets = async () => {
     try {
-      const res = await fetch('http://localhost:4000/portal/tickets');
-      if (res.ok) {
-        const data = await res.json();
-        setTickets(data);
-      }
+      const res = await api.get('/portal/tickets');
+      setTickets(res.data);
     } catch (err) {
       console.error('Error fetching tickets:', err);
     } finally {
@@ -87,19 +85,13 @@ export default function SoporteAdminPage() {
     if (!selectedTicket || !responseText.trim()) return;
     setIsSending(true);
     try {
-      const res = await fetch(`http://localhost:4000/portal/tickets/${selectedTicket.id}/respond`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resolution: responseText,
-          assigned_to: currentUser?.name || 'Soporte'
-        })
+      await api.put(`/portal/tickets/${selectedTicket.id}/respond`, {
+        resolution: responseText,
+        assigned_to: currentUser?.name || 'Soporte'
       });
-      if (res.ok) {
-        await fetchTickets();
-        setSelectedTicket(null);
-        setResponseText('');
-      }
+      await fetchTickets();
+      setSelectedTicket(null);
+      setResponseText('');
     } catch (err) {
       console.error(err);
       alert('Error al responder el ticket.');
@@ -111,14 +103,9 @@ export default function SoporteAdminPage() {
   const handleClose = async (ticketId: string) => {
     if (!window.confirm('¿Marcar este ticket como resuelto?')) return;
     try {
-      const res = await fetch(`http://localhost:4000/portal/tickets/${ticketId}/close`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (res.ok) {
-        await fetchTickets();
-        if (selectedTicket?.id === ticketId) setSelectedTicket(null);
-      }
+      await api.put(`/portal/tickets/${ticketId}/close`);
+      await fetchTickets();
+      if (selectedTicket?.id === ticketId) setSelectedTicket(null);
     } catch (err) {
       console.error(err);
     }

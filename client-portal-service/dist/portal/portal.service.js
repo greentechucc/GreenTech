@@ -1,10 +1,43 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -22,32 +55,43 @@ const customer_user_entity_1 = require("./customer-user.entity");
 const ticket_entity_1 = require("./ticket.entity");
 const typeorm_2 = require("typeorm");
 const mail_service_1 = require("./mail.service");
+const jwt_1 = require("@nestjs/jwt");
+const bcrypt = __importStar(require("bcrypt"));
 const axios_1 = __importDefault(require("axios"));
 let PortalService = class PortalService {
     userRepo;
     ticketRepo;
     mailService;
+    jwtService;
     PROJECT_API = 'http://localhost:3003';
     MONITORING_API = 'http://localhost:3007';
     BILLING_API = 'http://localhost:3008';
-    constructor(userRepo, ticketRepo, mailService) {
+    constructor(userRepo, ticketRepo, mailService, jwtService) {
         this.userRepo = userRepo;
         this.ticketRepo = ticketRepo;
         this.mailService = mailService;
+        this.jwtService = jwtService;
     }
     async register(data) {
         const existing = await this.userRepo.findOneBy({ email: data.email });
         if (existing) {
             throw new common_1.HttpException('Email already registered', common_1.HttpStatus.BAD_REQUEST);
         }
+        const hashedPassword = await bcrypt.hash(data.password, 10);
         const user = this.userRepo.create({
             name: data.name,
             email: data.email,
-            password_hash: data.password,
+            password_hash: hashedPassword,
         });
         const saved = await this.userRepo.save(user);
         this.mailService.sendWelcomeEmail(saved.email, saved.name).catch(() => { });
-        return { success: true, email: saved.email, name: saved.name };
+        const payload = { sub: saved.id, email: saved.email, role: 'Cliente', name: saved.name };
+        return {
+            success: true,
+            access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+            refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+            user: { email: saved.email, name: saved.name },
+        };
     }
     async getAllUsers() {
         return this.userRepo.find({
@@ -71,7 +115,8 @@ let PortalService = class PortalService {
             const waitMins = Math.ceil((new Date(user.login_locked_until).getTime() - new Date().getTime()) / 60000);
             throw new common_1.HttpException(`Cuenta bloqueada por seguridad. Revisa tu correo o intenta en ${waitMins} minutos.`, common_1.HttpStatus.FORBIDDEN);
         }
-        if (user.password_hash !== password) {
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
             user.failed_login_attempts = (user.failed_login_attempts || 0) + 1;
             if (user.failed_login_attempts >= 3) {
                 const lockTime = new Date();
@@ -90,7 +135,29 @@ let PortalService = class PortalService {
         user.login_locked_until = null;
         user.unlock_token = null;
         await this.userRepo.save(user);
-        return { success: true, email: user.email, name: user.name };
+        const payload = { sub: user.id, email: user.email, role: 'Cliente', name: user.name };
+        return {
+            success: true,
+            access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+            refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+            user: { email: user.email, name: user.name },
+        };
+    }
+    async refreshToken(refreshToken) {
+        try {
+            const payload = this.jwtService.verify(refreshToken);
+            const user = await this.userRepo.findOneBy({ id: payload.sub });
+            if (!user)
+                throw new common_1.HttpException('Token inválido', common_1.HttpStatus.UNAUTHORIZED);
+            const newPayload = { sub: user.id, email: user.email, role: 'Cliente', name: user.name };
+            return {
+                access_token: this.jwtService.sign(newPayload, { expiresIn: '15m' }),
+                user: { email: user.email, name: user.name },
+            };
+        }
+        catch {
+            throw new common_1.HttpException('Refresh token inválido o expirado', common_1.HttpStatus.UNAUTHORIZED);
+        }
     }
     async getCustomerDashboard(customerEmail) {
         try {
@@ -203,10 +270,11 @@ let PortalService = class PortalService {
         const user = await this.userRepo.findOne({ where: { email } });
         if (!user)
             throw new common_1.HttpException('User not found', common_1.HttpStatus.NOT_FOUND);
-        if (user.password_hash !== currentPass) {
+        const isMatch = await bcrypt.compare(currentPass, user.password_hash);
+        if (!isMatch) {
             throw new common_1.HttpException('Contraseña actual inválida', common_1.HttpStatus.BAD_REQUEST);
         }
-        user.password_hash = newPass;
+        user.password_hash = await bcrypt.hash(newPass, 10);
         await this.userRepo.save(user);
         return { success: true };
     }
@@ -268,7 +336,7 @@ let PortalService = class PortalService {
         if (!user || user.reset_code !== code || new Date() > new Date(user.reset_expires_at)) {
             throw new common_1.HttpException('Petición de restablecimiento inválida o expirada', common_1.HttpStatus.BAD_REQUEST);
         }
-        user.password_hash = newPass;
+        user.password_hash = await bcrypt.hash(newPass, 10);
         user.reset_code = null;
         user.reset_expires_at = null;
         user.failed_reset_attempts = 0;
@@ -297,6 +365,7 @@ exports.PortalService = PortalService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(ticket_entity_1.Ticket)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        mail_service_1.MailService])
+        mail_service_1.MailService,
+        jwt_1.JwtService])
 ], PortalService);
 //# sourceMappingURL=portal.service.js.map

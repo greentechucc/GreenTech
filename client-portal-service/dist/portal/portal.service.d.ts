@@ -2,18 +2,24 @@ import { CustomerUser } from './customer-user.entity';
 import { Ticket } from './ticket.entity';
 import { Repository } from 'typeorm';
 import { MailService } from './mail.service';
+import { JwtService } from '@nestjs/jwt';
 export declare class PortalService {
     private userRepo;
     private ticketRepo;
     private mailService;
+    private jwtService;
     private readonly PROJECT_API;
     private readonly MONITORING_API;
     private readonly BILLING_API;
-    constructor(userRepo: Repository<CustomerUser>, ticketRepo: Repository<Ticket>, mailService: MailService);
+    constructor(userRepo: Repository<CustomerUser>, ticketRepo: Repository<Ticket>, mailService: MailService, jwtService: JwtService);
     register(data: any): Promise<{
         success: boolean;
-        email: string;
-        name: string;
+        access_token: string;
+        refresh_token: string;
+        user: {
+            email: string;
+            name: string;
+        };
     }>;
     getAllUsers(): Promise<CustomerUser[]>;
     deleteUser(id: number): Promise<{
@@ -22,8 +28,19 @@ export declare class PortalService {
     }>;
     login(email: string, password: string): Promise<{
         success: boolean;
-        email: string;
-        name: string;
+        access_token: string;
+        refresh_token: string;
+        user: {
+            email: string;
+            name: string;
+        };
+    }>;
+    refreshToken(refreshToken: string): Promise<{
+        access_token: string;
+        user: {
+            email: string;
+            name: string;
+        };
     }>;
     getCustomerDashboard(customerEmail: string): Promise<{
         customer_email: string;

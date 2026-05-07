@@ -71,7 +71,6 @@ export function getCurrentUser(): AppUser | null {
 export function setCurrentUser(user: AppUser | null) {
   if (user) {
     localStorage.setItem('greentech_current_user', JSON.stringify(user));
-    localStorage.setItem('greentech_token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy');
   } else {
     localStorage.removeItem('greentech_current_user');
     localStorage.removeItem('greentech_token');

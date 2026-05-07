@@ -25,12 +25,20 @@ export default function LoginPage() {
         return;
       }
 
-      const user = authenticateUser(email, password);
-      if (user) {
-        setCurrentUser(user);
+      const res = await fetch('http://localhost:4000/crm/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem('greentech_token', data.access_token);
+        setCurrentUser(data.user);
         router.push('/dashboard');
       } else {
-        setError('Credenciales incorrectas o usuario inactivo');
+        const errData = await res.json();
+        setError(errData.message || 'Credenciales incorrectas o usuario inactivo');
       }
     } catch (err: any) {
       setError('Error de conexión');

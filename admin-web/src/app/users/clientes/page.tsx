@@ -5,6 +5,7 @@ import { Search, Shield, UserCircle, Mail, Clock, ShieldAlert, CheckCircle, XCir
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { getCurrentUser } from '@/lib/mock-users';
+import api from '@/services/api';
 
 // Defines the structure fetched from client-portal-service's CustomerUser
 interface CustomerUser {
@@ -33,11 +34,8 @@ export default function CustomersPage() {
 
     const fetchCustomers = async () => {
       try {
-        const res = await fetch('http://localhost:4000/portal/users');
-        if (res.ok) {
-          const data = await res.json();
-          setUsers(data);
-        }
+        const res = await api.get('/portal/users');
+        setUsers(res.data);
       } catch (err) {
          console.error('Failed to fetch customer users:', err);
       } finally {
@@ -67,15 +65,11 @@ export default function CustomersPage() {
   const handleDelete = async (id: number, name: string) => {
     if (!window.confirm(`¿Estás seguro de eliminar permanentemente al cliente "${name}"? Esta acción no se puede deshacer.`)) return;
     try {
-      const res = await fetch(`http://localhost:4000/portal/users/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setUsers(prev => prev.filter(u => u.id !== id));
-      } else {
-        alert('Error al eliminar el cliente.');
-      }
-    } catch (err) {
+      await api.delete(`/portal/users/${id}`);
+      setUsers(prev => prev.filter(u => u.id !== id));
+    } catch (err: any) {
       console.error(err);
-      alert('No se pudo conectar con el servidor.');
+      alert('Error al eliminar el cliente: ' + (err.response?.data?.message || 'Error desconocido'));
     }
   };
 

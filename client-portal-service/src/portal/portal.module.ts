@@ -12,7 +12,7 @@ import { Ticket } from './ticket.entity';
   imports: [
     TypeOrmModule.forFeature([CustomerUser, Ticket]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'greentech-secret-dev-2024',
+      secret: 'GREEN-TECH-MASTER-SECRET-2026',
       signOptions: { expiresIn: '15m' },
     }),
   ],

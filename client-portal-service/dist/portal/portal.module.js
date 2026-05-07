@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const portal_controller_1 = require("./portal.controller");
 const portal_service_1 = require("./portal.service");
 const mail_service_1 = require("./mail.service");
+const jwt_1 = require("@nestjs/jwt");
 const typeorm_1 = require("@nestjs/typeorm");
 const customer_user_entity_1 = require("./customer-user.entity");
 const ticket_entity_1 = require("./ticket.entity");
@@ -19,7 +20,13 @@ let PortalModule = class PortalModule {
 exports.PortalModule = PortalModule;
 exports.PortalModule = PortalModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([customer_user_entity_1.CustomerUser, ticket_entity_1.Ticket])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([customer_user_entity_1.CustomerUser, ticket_entity_1.Ticket]),
+            jwt_1.JwtModule.register({
+                secret: 'GREEN-TECH-MASTER-SECRET-2026',
+                signOptions: { expiresIn: '15m' },
+            }),
+        ],
         controllers: [portal_controller_1.PortalController],
         providers: [portal_service_1.PortalService, mail_service_1.MailService],
     })

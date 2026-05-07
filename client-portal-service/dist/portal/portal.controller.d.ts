@@ -9,13 +9,30 @@ export declare class PortalController {
     }>;
     register(data: any): Promise<{
         success: boolean;
-        email: string;
-        name: string;
+        access_token: string;
+        refresh_token: string;
+        user: {
+            email: string;
+            name: string;
+        };
     }>;
     login(credentials: any): Promise<{
         success: boolean;
-        email: string;
-        name: string;
+        access_token: string;
+        refresh_token: string;
+        user: {
+            email: string;
+            name: string;
+        };
+    }>;
+    refreshToken(body: {
+        refresh_token: string;
+    }): Promise<{
+        access_token: string;
+        user: {
+            email: string;
+            name: string;
+        };
     }>;
     getDashboard(customerEmail: string): Promise<{
         customer_email: string;

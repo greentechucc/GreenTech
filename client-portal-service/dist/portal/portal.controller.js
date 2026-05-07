@@ -32,6 +32,9 @@ let PortalController = class PortalController {
     login(credentials) {
         return this.portalService.login(credentials.email, credentials.password);
     }
+    refreshToken(body) {
+        return this.portalService.refreshToken(body.refresh_token);
+    }
     getDashboard(customerEmail) {
         return this.portalService.getCustomerDashboard(customerEmail);
     }
@@ -103,6 +106,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], PortalController.prototype, "login", null);
+__decorate([
+    (0, common_1.Post)('auth/refresh'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], PortalController.prototype, "refreshToken", null);
 __decorate([
     (0, common_1.Get)('dashboard/:customerEmail'),
     __param(0, (0, common_1.Param)('customerEmail')),

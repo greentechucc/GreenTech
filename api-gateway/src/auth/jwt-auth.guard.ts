@@ -1,7 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, SetMetadata } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from './public.decorator';
+
+export const IS_PUBLIC_KEY = 'isPublic';
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -11,6 +13,13 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+
+    // Allow CORS Preflight OPTIONS requests
+    if (request.method === 'OPTIONS') {
+      return true;
+    }
+
     // Check if route is marked as @Public()
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -18,7 +27,6 @@ export class JwtAuthGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const request = context.switchToHttp().getRequest();
     const path = request.path?.toLowerCase() || '';
 
     // Public auth routes (login, register, password reset, etc.)
@@ -53,8 +61,8 @@ export class JwtAuthGuard implements CanActivate {
         name: payload.name,
       };
       return true;
-    } catch (error) {
-      throw new UnauthorizedException('Token inválido o expirado');
+    } catch (error: any) {
+      throw new UnauthorizedException('Token inválido. Raw token recuperado mide ' + (token ? token.length : 0) + ' caracteres: [' + token + ']. Detalle: ' + (error?.message || 'Desconocido'));
     }
   }
 }

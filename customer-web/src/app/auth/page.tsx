@@ -39,8 +39,12 @@ export default function LoginPage() {
       const data = res.data;
       
       // Success
-      localStorage.setItem('customer_email', data.email);
-      localStorage.setItem('customer_name', data.name);
+      if (data.access_token) {
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('refresh_token', data.refresh_token);
+      }
+      localStorage.setItem('customer_email', data.user ? data.user.email : data.email);
+      localStorage.setItem('customer_name', data.user ? data.user.name : data.name);
       router.push('/dashboard');
 
     } catch (err: any) {

@@ -5,7 +5,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'greentech-secret-dev-2024',
+      secret: 'GREEN-TECH-MASTER-SECRET-2026',
       signOptions: { expiresIn: '15m' },
     }),
   ],
