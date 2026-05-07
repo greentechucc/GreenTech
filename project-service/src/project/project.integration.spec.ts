@@ -7,6 +7,17 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Project } from './project.entity';
 import { Incident } from './incident.entity';
 
+// Configurar Mock de Redis que previene conexiones reales en la prueba de integración
+jest.mock('ioredis', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      publish: jest.fn(),
+      quit: jest.fn(),
+      disconnect: jest.fn(),
+    };
+  });
+});
+
 describe('ProjectController (e2e) Integration', () => {
   let app: INestApplication;
   
