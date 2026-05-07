@@ -1,4 +1,5 @@
 import { Controller, All, Req, Res } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import axios from 'axios';
 import type { Request, Response } from 'express';
 
@@ -10,18 +11,26 @@ export class GatewayController {
       try {
         const targetPath = req.path.replace(new RegExp(`^${prefixToRemove}`), '');
 
-        // Only forward safe headers — skip hop-by-hop headers that break proxying
+        // Build safe headers — strip any client-supplied x-user-* headers (prevent spoofing)
         const forwardHeaders: Record<string, string> = {};
         if (req.headers['content-type']) forwardHeaders['content-type'] = req.headers['content-type'] as string;
-        if (req.headers['authorization']) forwardHeaders['authorization'] = req.headers['authorization'] as string;
         if (req.headers['accept']) forwardHeaders['accept'] = req.headers['accept'] as string;
+
+        // Inject authenticated user info from JWT (set by JwtAuthGuard)
+        const user = (req as any)['user'];
+        if (user) {
+          forwardHeaders['x-user-id'] = String(user.userId);
+          forwardHeaders['x-user-email'] = user.email;
+          forwardHeaders['x-user-role'] = user.role;
+          forwardHeaders['x-user-name'] = user.name || '';
+        }
 
         const response = await axios({
           method: req.method as any,
           url: `${targetUrl}${targetPath}`,
           data: ['POST', 'PUT', 'PATCH'].includes(req.method.toUpperCase()) ? req.body : undefined,
           headers: forwardHeaders,
-          validateStatus: () => true, // Don't throw on non-2xx
+          validateStatus: () => true,
         });
         res.status(response.status).send(response.data);
       } catch (error: any) {

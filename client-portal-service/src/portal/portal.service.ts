@@ -4,6 +4,8 @@ import { CustomerUser } from './customer-user.entity';
 import { Ticket } from './ticket.entity';
 import { Repository } from 'typeorm';
 import { MailService } from './mail.service';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import axios from 'axios';
 
 @Injectable()
@@ -18,6 +20,7 @@ export class PortalService {
     @InjectRepository(Ticket)
     private ticketRepo: Repository<Ticket>,
     private mailService: MailService,
+    private jwtService: JwtService,
   ) {}
 
   async register(data: any) {
@@ -25,17 +28,24 @@ export class PortalService {
     if (existing) {
       throw new HttpException('Email already registered', HttpStatus.BAD_REQUEST);
     }
+    const hashedPassword = await bcrypt.hash(data.password, 10);
     const user = this.userRepo.create({
       name: data.name,
       email: data.email,
-      password_hash: data.password, // In a real app, hash this
+      password_hash: hashedPassword,
     });
     const saved = await this.userRepo.save(user);
 
     // Enviar correo de bienvenida (no bloquea la respuesta)
     this.mailService.sendWelcomeEmail(saved.email, saved.name).catch(() => {});
 
-    return { success: true, email: saved.email, name: saved.name };
+    const payload = { sub: saved.id, email: saved.email, role: 'Cliente', name: saved.name };
+    return {
+      success: true,
+      access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      user: { email: saved.email, name: saved.name },
+    };
   }
 
   async getAllUsers() {
@@ -64,14 +74,14 @@ export class PortalService {
       throw new HttpException(`Cuenta bloqueada por seguridad. Revisa tu correo o intenta en ${waitMins} minutos.`, HttpStatus.FORBIDDEN);
     }
 
-    if (user.password_hash !== password) {
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
       user.failed_login_attempts = (user.failed_login_attempts || 0) + 1;
       if (user.failed_login_attempts >= 3) {
         const lockTime = new Date();
         lockTime.setHours(lockTime.getHours() + 1);
         user.login_locked_until = lockTime;
         
-        // Generate Unlock Token and sent Alert
         const token = require('crypto').randomUUID();
         user.unlock_token = token;
         await this.userRepo.save(user);
@@ -89,7 +99,28 @@ export class PortalService {
     user.unlock_token = null as any;
     await this.userRepo.save(user);
 
-    return { success: true, email: user.email, name: user.name };
+    const payload = { sub: user.id, email: user.email, role: 'Cliente', name: user.name };
+    return {
+      success: true,
+      access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      user: { email: user.email, name: user.name },
+    };
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+      const user = await this.userRepo.findOneBy({ id: payload.sub });
+      if (!user) throw new HttpException('Token inválido', HttpStatus.UNAUTHORIZED);
+      const newPayload = { sub: user.id, email: user.email, role: 'Cliente', name: user.name };
+      return {
+        access_token: this.jwtService.sign(newPayload, { expiresIn: '15m' }),
+        user: { email: user.email, name: user.name },
+      };
+    } catch {
+      throw new HttpException('Refresh token inválido o expirado', HttpStatus.UNAUTHORIZED);
+    }
   }
 
   async getCustomerDashboard(customerEmail: string) {
@@ -207,10 +238,11 @@ export class PortalService {
   async updatePassword(email: string, currentPass: string, newPass: string) {
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    if (user.password_hash !== currentPass) {
+    const isMatch = await bcrypt.compare(currentPass, user.password_hash);
+    if (!isMatch) {
        throw new HttpException('Contraseña actual inválida', HttpStatus.BAD_REQUEST);
     }
-    user.password_hash = newPass;
+    user.password_hash = await bcrypt.hash(newPass, 10);
     await this.userRepo.save(user);
     return { success: true };
   }
@@ -284,10 +316,9 @@ export class PortalService {
       throw new HttpException('Petición de restablecimiento inválida o expirada', HttpStatus.BAD_REQUEST);
     }
 
-    user.password_hash = newPass;
+    user.password_hash = await bcrypt.hash(newPass, 10);
     user.reset_code = null as any;
     user.reset_expires_at = null as any;
-    // Clearing reset lockouts 
     user.failed_reset_attempts = 0;
     user.reset_locked_until = null as any;
     await this.userRepo.save(user);

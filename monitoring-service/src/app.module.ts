@@ -8,11 +8,11 @@ import { MonitoringModule } from './monitoring/monitoring.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5441, // TimescaleDB instance map
-      username: 'postgres',
-      password: 'postgres',
-      database: 'monitoring_db',
+      host: process.env.DATABASE_HOST || 'localhost',
+      port: parseInt(process.env.DATABASE_PORT || '5441'), // TimescaleDB instance map
+      username: process.env.DATABASE_USER || 'postgres',
+      password: process.env.DATABASE_PASSWORD || 'postgres',
+      database: process.env.DATABASE_NAME || 'monitoring_db',
       autoLoadEntities: true,
       synchronize: true, // Only for development; Timescale hypertable creation needs custom query
     }),

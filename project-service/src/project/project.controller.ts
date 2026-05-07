@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { ProjectService } from './project.service';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('projects')
 export class ProjectController {
 
   constructor(private service: ProjectService) {}
 
+  @Roles('Admin', 'Proyectos', 'Tecnico')
   @Get()
   findAll() {
     return this.service.findAll();

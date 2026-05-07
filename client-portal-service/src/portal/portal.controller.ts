@@ -25,6 +25,11 @@ export class PortalController {
     return this.portalService.login(credentials.email, credentials.password);
   }
 
+  @Post('auth/refresh')
+  refreshToken(@Body() body: { refresh_token: string }) {
+    return this.portalService.refreshToken(body.refresh_token);
+  }
+
   @Get('dashboard/:customerEmail')
   getDashboard(@Param('customerEmail') customerEmail: string) {
     return this.portalService.getCustomerDashboard(customerEmail);
