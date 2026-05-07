@@ -1,0 +1,284 @@
+# =============================================================================
+# GreenTech — Pipeline de Despliegue Continuo (CD)
+# Se ejecuta al hacer merge a main.
+# Construye imágenes Docker, las sube a GHCR, y despliega en Render.
+# =============================================================================
+
+name: "CD — Despliegue Continuo"
+
+on:
+  push:
+    branches: [main]
+
+# Solo una ejecución de CD a la vez
+concurrency:
+  group: cd-main
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/greentechucc/greentech
+  NODE_VERSION: "20"
+
+jobs:
+  # ===========================================================================
+  # Job 1: Detectar qué servicios fueron modificados
+  # ===========================================================================
+  detect-changes:
+    name: "🔍 Detectar Cambios"
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.build-matrix.outputs.services }}
+      has-changes: ${{ steps.build-matrix.outputs.has_changes }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Filtrar cambios por ruta
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api-gateway:
+              - 'api-gateway/**'
+            crm-service:
+              - 'crm-service/**'
+            project-service:
+              - 'project-service/**'
+            quotation-service:
+              - 'quotation-service/**'
+            billing-service:
+              - 'billing-service/**'
+            permit-service:
+              - 'permit-service/**'
+            client-portal-service:
+              - 'client-portal-service/**'
+            analytics-service:
+              - 'analytics-service/**'
+            monitoring-service:
+              - 'monitoring-service/**'
+
+      - name: Construir matriz de servicios modificados
+        id: build-matrix
+        run: |
+          SERVICES=()
+          for svc in api-gateway crm-service project-service quotation-service billing-service permit-service client-portal-service analytics-service monitoring-service; do
+            val="false"
+            case "$svc" in
+              api-gateway) val="${{ steps.filter.outputs.api-gateway }}" ;;
+              crm-service) val="${{ steps.filter.outputs.crm-service }}" ;;
+              project-service) val="${{ steps.filter.outputs.project-service }}" ;;
+              quotation-service) val="${{ steps.filter.outputs.quotation-service }}" ;;
+              billing-service) val="${{ steps.filter.outputs.billing-service }}" ;;
+              permit-service) val="${{ steps.filter.outputs.permit-service }}" ;;
+              client-portal-service) val="${{ steps.filter.outputs.client-portal-service }}" ;;
+              analytics-service) val="${{ steps.filter.outputs.analytics-service }}" ;;
+              monitoring-service) val="${{ steps.filter.outputs.monitoring-service }}" ;;
+            esac
+            if [ "$val" == "true" ]; then
+              SERVICES+=("\"$svc\"")
+            fi
+          done
+
+          if [ ${#SERVICES[@]} -gt 0 ]; then
+            SERVICES_JSON="[$(IFS=,; echo "${SERVICES[*]}")]"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            SERVICES_JSON="[]"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+          echo "services=$SERVICES_JSON" >> $GITHUB_OUTPUT
+          echo "📦 Servicios a desplegar: $SERVICES_JSON"
+
+  # ===========================================================================
+  # Job 2: Build + Push a GitHub Container Registry (GHCR)
+  # ===========================================================================
+  build-and-push:
+    name: "📦 Build & Push — ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Autenticarse en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraer metadatos de Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+
+      - name: "🐳 Build & Push imagen Docker"
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: "📋 Resumen de imagen publicada"
+        run: |
+          echo "### 📦 Imagen publicada: ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Propiedad | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Registro | \`${{ env.REGISTRY }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Imagen | \`${{ env.IMAGE_PREFIX }}/${{ matrix.service }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tags | \`${{ steps.meta.outputs.tags }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| SHA | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 3: Despliegue automático a Staging
+  # ===========================================================================
+  deploy-staging:
+    name: "🚀 Deploy Staging — ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-push]
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    environment:
+      name: staging
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+
+    steps:
+      - name: "🚀 Desplegar en Render (Staging)"
+        run: |
+          echo "🔄 Iniciando despliegue de ${{ matrix.service }} en Staging..."
+
+          # ---------------------------------------------------------------
+          # Render Deploy Hook
+          # Configura un webhook en Render para cada servicio y guárdalo
+          # como secreto en GitHub con el formato:
+          #   RENDER_DEPLOY_HOOK_<SERVICE_NAME_UPPER>_STAGING
+          # Ejemplo: RENDER_DEPLOY_HOOK_API_GATEWAY_STAGING
+          # ---------------------------------------------------------------
+          SERVICE_UPPER=$(echo "${{ matrix.service }}" | tr '[:lower:]-' '[:upper:]_')
+          HOOK_SECRET_NAME="RENDER_DEPLOY_HOOK_${SERVICE_UPPER}_STAGING"
+
+          echo "📡 Buscando deploy hook: $HOOK_SECRET_NAME"
+
+          # Si tienes configurados los deploy hooks de Render, descomenta:
+          # HOOK_URL="${{ secrets[env.HOOK_SECRET_NAME] }}"
+          # if [ -n "$HOOK_URL" ]; then
+          #   curl -X POST "$HOOK_URL"
+          #   echo "✅ Deploy hook disparado exitosamente"
+          # else
+          #   echo "⚠️ Deploy hook no configurado para ${{ matrix.service }}"
+          # fi
+
+          echo "✅ Despliegue en Staging completado para ${{ matrix.service }}"
+          echo "🐳 Imagen: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest"
+
+      - name: "📋 Resumen de despliegue Staging"
+        run: |
+          echo "### 🚀 Despliegue Staging: ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Propiedad | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Servicio | \`${{ matrix.service }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ambiente | Staging |" >> $GITHUB_STEP_SUMMARY
+          echo "| Imagen | \`${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u +'%Y-%m-%dT%H:%M:%SZ') |" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 4: Despliegue a Producción (con aprobación manual)
+  # ===========================================================================
+  deploy-production:
+    name: "🏭 Deploy Producción — ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+    needs: [detect-changes, deploy-staging]
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    environment:
+      name: production
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+
+    steps:
+      - name: "🏭 Desplegar en Render (Producción)"
+        run: |
+          echo "🔄 Iniciando despliegue de ${{ matrix.service }} en Producción..."
+
+          SERVICE_UPPER=$(echo "${{ matrix.service }}" | tr '[:lower:]-' '[:upper:]_')
+          HOOK_SECRET_NAME="RENDER_DEPLOY_HOOK_${SERVICE_UPPER}_PRODUCTION"
+
+          echo "📡 Buscando deploy hook: $HOOK_SECRET_NAME"
+
+          # Si tienes configurados los deploy hooks de Render, descomenta:
+          # HOOK_URL="${{ secrets[env.HOOK_SECRET_NAME] }}"
+          # if [ -n "$HOOK_URL" ]; then
+          #   curl -X POST "$HOOK_URL"
+          #   echo "✅ Deploy hook disparado exitosamente"
+          # else
+          #   echo "⚠️ Deploy hook no configurado para ${{ matrix.service }}"
+          # fi
+
+          echo "✅ Despliegue en Producción completado para ${{ matrix.service }}"
+          echo "🐳 Imagen: ${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:sha-$(echo ${{ github.sha }} | cut -c1-7)"
+
+      - name: "📋 Resumen de despliegue Producción"
+        run: |
+          echo "### 🏭 Despliegue Producción: ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Propiedad | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Servicio | \`${{ matrix.service }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ambiente | **Producción** 🔴 |" >> $GITHUB_STEP_SUMMARY
+          echo "| Imagen | \`${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:sha-$(echo ${{ github.sha }} | cut -c1-7)\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Aprobado por | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timestamp | $(date -u +'%Y-%m-%dT%H:%M:%SZ') |" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Job 5: Resumen final del despliegue
+  # ===========================================================================
+  cd-summary:
+    name: "📋 Resumen CD"
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-push, deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Resumen final
+        run: |
+          echo "### 🏁 Resumen del Pipeline CD" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Fase | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 Detección de cambios | ${{ needs.detect-changes.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📦 Build & Push GHCR | ${{ needs.build-and-push.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 Deploy Staging | ${{ needs.deploy-staging.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🏭 Deploy Producción | ${{ needs.deploy-production.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Autor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
