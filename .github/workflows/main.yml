@@ -23,6 +23,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: './project-service/package-lock.json'
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Instalar Dependencias (Project Service)
         working-directory: ./project-service
@@ -30,7 +32,7 @@ jobs:
 
       - name: Ejecutar Pruebas de Cobertura y Unitaras
         working-directory: ./project-service
-        run: npm run test:cov
+        run: npm run test:cov -- --forceExit
 
   deploy:
     name: Despliegue Automatizado (CD)
