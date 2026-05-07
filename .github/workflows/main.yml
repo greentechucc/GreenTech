@@ -1,0 +1,63 @@
+name: GreenTech CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Ejecución Automática de Pruebas (CI)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './project-service/package-lock.json'
+
+      - name: Instalar Dependencias (Project Service)
+        working-directory: ./project-service
+        run: npm ci
+
+      - name: Ejecutar Pruebas de Cobertura y Unitaras
+        working-directory: ./project-service
+        run: npm run test:cov
+
+  deploy:
+    name: Despliegue Automatizado (CD)
+    runs-on: ubuntu-latest
+    needs: test # Solo se despliega si las pruebas pasan exitosamente
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Simulación de Autenticación de Servidor Seguro
+        run: |
+          echo "🔐 Autenticando con el servidor remoto (Mock)..."
+          echo "✅ Autenticación exitosa."
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir Imagen Docker (Buenas Prácticas)
+        working-directory: ./project-service
+        run: |
+          echo "📦 Construyendo la imagen del microservicio usando buenas prácticas multi-etapa..."
+          docker build -t greentech/project-service:latest .
+          echo "✅ Construcción exitosa."
+
+      - name: Simulación de Despliegue a Producción
+        run: |
+          echo "🚀 Desplegando en los clústers de producción..."
+          echo "🌐 Servicio disponible y actualizado de forma continua."
+          echo "¡Despliegue finalizado exitosamente!"

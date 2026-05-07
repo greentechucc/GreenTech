@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.git
+.env
+npm-debug.log
+test-output.txt
+test-output-cov.txt
+test-output-cov-utf8.txt
+*.spec.ts
+*.md
