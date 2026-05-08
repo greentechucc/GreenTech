@@ -35,15 +35,25 @@ let PermitService = PermitService_1 = class PermitService {
     documentRepository;
     utilityReqRepository;
     logger = new common_1.Logger(PermitService_1.name);
-    redisPub;
-    redisSub;
+    redisPub = null;
+    redisSub = null;
     constructor(permitRepository, documentRepository, utilityReqRepository) {
         this.permitRepository = permitRepository;
         this.documentRepository = documentRepository;
         this.utilityReqRepository = utilityReqRepository;
-        this.redisPub = new ioredis_1.default({ host: 'localhost', port: 6379 });
-        this.redisSub = new ioredis_1.default({ host: 'localhost', port: 6379 });
-        this.initSubscriptions();
+        try {
+            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            this.redisPub = new ioredis_1.default(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+            this.redisSub = new ioredis_1.default(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+            this.redisPub.on('error', () => { this.redisPub = null; });
+            this.redisSub.on('error', () => { this.redisSub = null; });
+            this.initSubscriptions();
+        }
+        catch {
+            this.logger.warn('Redis not available, permit service running without pub/sub');
+            this.redisPub = null;
+            this.redisSub = null;
+        }
     }
     async onModuleInit() {
         let inserted = 0;
@@ -65,6 +75,8 @@ let PermitService = PermitService_1 = class PermitService {
         return this.utilityReqRepository.find({ where: { utility_company: company } });
     }
     initSubscriptions() {
+        if (!this.redisSub)
+            return;
         this.redisSub.subscribe('project.stage.changed', (err) => {
             if (err)
                 this.logger.error('Failed to subscribe', err);
@@ -109,11 +121,13 @@ let PermitService = PermitService_1 = class PermitService {
         if (status === 'APPROVED')
             permit.approval_date = new Date();
         const updated = await this.permitRepository.save(permit);
-        this.redisPub.publish('permit.status.updated', JSON.stringify({
-            permitId: updated.id,
-            projectId: updated.project_id,
-            status: updated.status
-        }));
+        if (this.redisPub) {
+            this.redisPub.publish('permit.status.updated', JSON.stringify({
+                permitId: updated.id,
+                projectId: updated.project_id,
+                status: updated.status
+            }));
+        }
         return updated;
     }
     async update(id, data) {

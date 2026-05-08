@@ -76,12 +76,14 @@ export class ProspectsService {
       await this.customerRepo.save(customer);
     }
 
-    // ✅ 3. Publicar evento en Redis
-    await redis.publish('prospect.converted', JSON.stringify({
-      id: prospect.id,
-      name: prospect.name,
-      email: prospect.email,
-    }));
+    // ✅ 3. Publicar evento en Redis (si está disponible)
+    if (redis) {
+      await redis.publish('prospect.converted', JSON.stringify({
+        id: prospect.id,
+        name: prospect.name,
+        email: prospect.email,
+      }));
+    }
 
     // ✅ 4. Respuesta completa
     return {

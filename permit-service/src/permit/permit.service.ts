@@ -17,8 +17,8 @@ const DEFAULT_UTILITY_REQS = [
 @Injectable()
 export class PermitService implements OnModuleInit {
   private readonly logger = new Logger(PermitService.name);
-  private redisPub: Redis;
-  private redisSub: Redis;
+  private redisPub: Redis | null = null;
+  private redisSub: Redis | null = null;
 
   constructor(
     @InjectRepository(Permit)
@@ -28,10 +28,18 @@ export class PermitService implements OnModuleInit {
     @InjectRepository(UtilityRequirement)
     private utilityReqRepository: Repository<UtilityRequirement>,
   ) {
-    this.redisPub = new Redis({ host: 'localhost', port: 6379 });
-    this.redisSub = new Redis({ host: 'localhost', port: 6379 });
-    
-    this.initSubscriptions();
+    try {
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      this.redisPub = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+      this.redisSub = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+      this.redisPub.on('error', () => { this.redisPub = null; });
+      this.redisSub.on('error', () => { this.redisSub = null; });
+      this.initSubscriptions();
+    } catch {
+      this.logger.warn('Redis not available, permit service running without pub/sub');
+      this.redisPub = null;
+      this.redisSub = null;
+    }
   }
 
   async onModuleInit() {
@@ -57,6 +65,8 @@ export class PermitService implements OnModuleInit {
   }
 
   private initSubscriptions() {
+    if (!this.redisSub) return;
+    
     this.redisSub.subscribe('project.stage.changed', (err) => {
       if (err) this.logger.error('Failed to subscribe', err);
     });
@@ -107,11 +117,13 @@ export class PermitService implements OnModuleInit {
     const updated = await this.permitRepository.save(permit);
     
     // Publicar evento
-    this.redisPub.publish('permit.status.updated', JSON.stringify({
-        permitId: updated.id,
-        projectId: updated.project_id,
-        status: updated.status
-    }));
+    if (this.redisPub) {
+      this.redisPub.publish('permit.status.updated', JSON.stringify({
+          permitId: updated.id,
+          projectId: updated.project_id,
+          status: updated.status
+      }));
+    }
     
     return updated;
   }

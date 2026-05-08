@@ -6,22 +6,34 @@ import Redis from 'ioredis';
 
 @Injectable()
 export class AnalyticsService {
-  private redisSub: Redis;
+  private redisSub: Redis | null = null;
   private readonly logger = new Logger(AnalyticsService.name);
 
   constructor(
     @InjectRepository(KpiRecord)
     private kpiRepo: Repository<KpiRecord>
   ) {
-    this.redisSub = new Redis({ host: 'localhost', port: 6379 });
-    this.initSubscriptions();
+    try {
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      this.redisSub = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+      this.redisSub.on('error', () => {
+        this.logger.warn('Redis not available, analytics running without real-time events');
+        this.redisSub = null;
+      });
+      this.initSubscriptions();
+    } catch {
+      this.logger.warn('Redis not available, analytics running without real-time events');
+      this.redisSub = null;
+    }
   }
 
   private initSubscriptions() {
+    if (!this.redisSub) return;
+    
     // Analytics listens to EVERYTHING to build KPIs
     const events = ['project.stage.changed', 'payment.received', 'permit.status.updated', 'lead.created', 'lead.converted'];
     
-    events.forEach(ch => this.redisSub.subscribe(ch));
+    events.forEach(ch => this.redisSub!.subscribe(ch));
 
     this.redisSub.on('message', async (channel, message) => {
       this.logger.log(`Analytics captured event from ${channel}: ${message}`);

@@ -25,6 +25,7 @@ exports.AppModule = AppModule = __decorate([
                 username: process.env.DATABASE_USER || 'postgres',
                 password: process.env.DATABASE_PASSWORD || 'postgres',
                 database: process.env.DATABASE_NAME || 'monitoring_db',
+                entityPrefix: 'monitoring_',
                 autoLoadEntities: true,
                 synchronize: true,
             }),

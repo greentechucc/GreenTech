@@ -28,12 +28,23 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
     inverterRepo;
     dataSource;
     logger = new common_1.Logger(MonitoringService_1.name);
-    redisPub;
+    redisPub = null;
     constructor(telemetryRepo, inverterRepo, dataSource) {
         this.telemetryRepo = telemetryRepo;
         this.inverterRepo = inverterRepo;
         this.dataSource = dataSource;
-        this.redisPub = new ioredis_1.default({ host: 'localhost', port: 6379 });
+        try {
+            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            this.redisPub = new ioredis_1.default(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+            this.redisPub.on('error', () => {
+                this.logger.warn('Redis not available, monitoring running without pub/sub');
+                this.redisPub = null;
+            });
+        }
+        catch {
+            this.logger.warn('Redis not available, monitoring running without pub/sub');
+            this.redisPub = null;
+        }
     }
     async onApplicationBootstrap() {
         try {
@@ -52,12 +63,14 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
         await this.telemetryRepo.save(record);
         await this.inverterRepo.update({ serial_number: record.inverter_id }, { last_communication: record.time });
         if (record.status === 'ERROR' || record.power_output_kw === 0) {
-            this.redisPub.publish('monitoring.alert', JSON.stringify({
-                inverterId: record.inverter_id,
-                status: record.status,
-                power: record.power_output_kw,
-                time: record.time
-            }));
+            if (this.redisPub) {
+                this.redisPub.publish('monitoring.alert', JSON.stringify({
+                    inverterId: record.inverter_id,
+                    status: record.status,
+                    power: record.power_output_kw,
+                    time: record.time
+                }));
+            }
         }
         return record;
     }

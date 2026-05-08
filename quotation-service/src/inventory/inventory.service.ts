@@ -47,13 +47,23 @@ const SEED_DATA: Partial<InventoryItem>[] = [
 
 @Injectable()
 export class InventoryService implements OnModuleInit {
-  private redisSub: Redis;
+  private redisSub: Redis | null = null;
 
   constructor(
     @InjectRepository(InventoryItem)
     private repo: Repository<InventoryItem>,
   ) {
-    this.redisSub = new Redis();
+    try {
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      this.redisSub = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+      this.redisSub.on('error', () => {
+        console.warn('[Inventory] Redis not available, running without pub/sub');
+        this.redisSub = null;
+      });
+    } catch {
+      console.warn('[Inventory] Redis not available, running without pub/sub');
+      this.redisSub = null;
+    }
   }
 
   async onModuleInit() {
@@ -69,29 +79,31 @@ export class InventoryService implements OnModuleInit {
       console.log(`✅ Inventario solar: ${inserted} productos nuevos agregados (total seed: ${SEED_DATA.length})`);
     }
 
-    // Subscribe to inventory deduction events
-    this.redisSub.subscribe('inventory.deduct');
-    this.redisSub.on('message', async (channel, message) => {
-      if (channel === 'inventory.deduct') {
-        try {
-          const payload = JSON.parse(message);
-          if (payload.bom_json) {
-            const bom = JSON.parse(payload.bom_json);
-            console.log(`[Inventory] Deducting stock for project ${payload.projectId}`);
-            for (const item of bom) {
-              const invItem = await this.repo.findOne({ where: { sku: item.sku } });
-              if (invItem) {
-                invItem.stock = Math.max(0, invItem.stock - item.quantity);
-                await this.repo.save(invItem);
-                console.log(`[Inventory] Deducted ${item.quantity} of ${invItem.sku}`);
+    // Subscribe to inventory deduction events (only if Redis is available)
+    if (this.redisSub) {
+      this.redisSub.subscribe('inventory.deduct');
+      this.redisSub.on('message', async (channel, message) => {
+        if (channel === 'inventory.deduct') {
+          try {
+            const payload = JSON.parse(message);
+            if (payload.bom_json) {
+              const bom = JSON.parse(payload.bom_json);
+              console.log(`[Inventory] Deducting stock for project ${payload.projectId}`);
+              for (const item of bom) {
+                const invItem = await this.repo.findOne({ where: { sku: item.sku } });
+                if (invItem) {
+                  invItem.stock = Math.max(0, invItem.stock - item.quantity);
+                  await this.repo.save(invItem);
+                  console.log(`[Inventory] Deducted ${item.quantity} of ${invItem.sku}`);
+                }
               }
             }
+          } catch (e) {
+            console.error('[Inventory] Error processing deduction', e);
           }
-        } catch (e) {
-          console.error('[Inventory] Error processing deduction', e);
         }
-      }
-    });
+      });
+    }
   }
 
   async deductBom(bomJson: string) {

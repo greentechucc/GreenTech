@@ -24,14 +24,27 @@ const kpi_entity_1 = require("./kpi.entity");
 const ioredis_1 = __importDefault(require("ioredis"));
 let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
     kpiRepo;
-    redisSub;
+    redisSub = null;
     logger = new common_1.Logger(AnalyticsService_1.name);
     constructor(kpiRepo) {
         this.kpiRepo = kpiRepo;
-        this.redisSub = new ioredis_1.default({ host: 'localhost', port: 6379 });
-        this.initSubscriptions();
+        try {
+            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            this.redisSub = new ioredis_1.default(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+            this.redisSub.on('error', () => {
+                this.logger.warn('Redis not available, analytics running without real-time events');
+                this.redisSub = null;
+            });
+            this.initSubscriptions();
+        }
+        catch {
+            this.logger.warn('Redis not available, analytics running without real-time events');
+            this.redisSub = null;
+        }
     }
     initSubscriptions() {
+        if (!this.redisSub)
+            return;
         const events = ['project.stage.changed', 'payment.received', 'permit.status.updated', 'lead.created', 'lead.converted'];
         events.forEach(ch => this.redisSub.subscribe(ch));
         this.redisSub.on('message', async (channel, message) => {

@@ -8,7 +8,7 @@ import Redis from 'ioredis';
 @Injectable()
 export class MonitoringService implements OnApplicationBootstrap {
   private readonly logger = new Logger(MonitoringService.name);
-  private redisPub: Redis;
+  private redisPub: Redis | null = null;
 
   constructor(
     @InjectRepository(Telemetry)
@@ -17,7 +17,17 @@ export class MonitoringService implements OnApplicationBootstrap {
     private inverterRepo: Repository<Inverter>,
     private dataSource: DataSource
   ) {
-    this.redisPub = new Redis({ host: 'localhost', port: 6379 });
+    try {
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      this.redisPub = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+      this.redisPub.on('error', () => {
+        this.logger.warn('Redis not available, monitoring running without pub/sub');
+        this.redisPub = null;
+      });
+    } catch {
+      this.logger.warn('Redis not available, monitoring running without pub/sub');
+      this.redisPub = null;
+    }
   }
 
   // Convert table to timescale hypertable if needed
@@ -46,12 +56,14 @@ export class MonitoringService implements OnApplicationBootstrap {
 
     // Alert check
     if (record.status === 'ERROR' || record.power_output_kw === 0) {
-      this.redisPub.publish('monitoring.alert', JSON.stringify({
-        inverterId: record.inverter_id,
-        status: record.status,
-        power: record.power_output_kw,
-        time: record.time
-      }));
+      if (this.redisPub) {
+        this.redisPub.publish('monitoring.alert', JSON.stringify({
+          inverterId: record.inverter_id,
+          status: record.status,
+          power: record.power_output_kw,
+          time: record.time
+        }));
+      }
     }
     
     return record;

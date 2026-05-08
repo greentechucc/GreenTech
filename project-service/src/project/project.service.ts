@@ -22,7 +22,7 @@ const DEFAULT_TASKS = [
 @Injectable()
 export class ProjectService {
 
-  private redisClient: Redis;
+  private redisClient: Redis | null = null;
 
   constructor(
     @InjectRepository(Project)
@@ -30,7 +30,15 @@ export class ProjectService {
     @InjectRepository(Incident)
     private incidentRepo: Repository<Incident>,
   ) {
-    this.redisClient = new Redis();
+    try {
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      this.redisClient = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
+      this.redisClient.on('error', () => { this.redisClient = null; });
+      console.log('[ProjectService] Redis connected (optional)');
+    } catch {
+      console.warn('[ProjectService] Redis not available, running without pub/sub');
+      this.redisClient = null;
+    }
   }
 
   async createProject(data: any) {
@@ -73,10 +81,12 @@ export class ProjectService {
           await axios.post('http://localhost:3002/inventory/deduct/bom', { bom_json: project.bom_json });
         } catch (e) {
            console.warn('HTTP inventory deduct failed, fallback to Redis', e.message);
-           this.redisClient.publish('inventory.deduct', JSON.stringify({
-             projectId: project.id,
-             bom_json: project.bom_json,
-           }));
+           if (this.redisClient) {
+             this.redisClient.publish('inventory.deduct', JSON.stringify({
+               projectId: project.id,
+               bom_json: project.bom_json,
+             }));
+           }
         }
       }
     }
