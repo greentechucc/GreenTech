@@ -17,16 +17,12 @@ export class MonitoringService implements OnApplicationBootstrap {
     private inverterRepo: Repository<Inverter>,
     private dataSource: DataSource
   ) {
-    try {
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      this.redisPub = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-      this.redisPub.on('error', () => {
-        this.logger.warn('Redis not available, monitoring running without pub/sub');
-        this.redisPub = null;
-      });
-    } catch {
-      this.logger.warn('Redis not available, monitoring running without pub/sub');
-      this.redisPub = null;
+    const redisUrl = process.env.REDIS_URL;
+    if (redisUrl) {
+      this.redisPub = new Redis(redisUrl);
+      this.logger.log('Redis connected for monitoring alerts');
+    } else {
+      this.logger.warn('REDIS_URL not set, monitoring running without pub/sub');
     }
   }
 

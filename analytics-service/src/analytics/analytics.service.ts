@@ -13,17 +13,13 @@ export class AnalyticsService {
     @InjectRepository(KpiRecord)
     private kpiRepo: Repository<KpiRecord>
   ) {
-    try {
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      this.redisSub = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-      this.redisSub.on('error', () => {
-        this.logger.warn('Redis not available, analytics running without real-time events');
-        this.redisSub = null;
-      });
+    const redisUrl = process.env.REDIS_URL;
+    if (redisUrl) {
+      this.redisSub = new Redis(redisUrl);
       this.initSubscriptions();
-    } catch {
-      this.logger.warn('Redis not available, analytics running without real-time events');
-      this.redisSub = null;
+      this.logger.log('Redis connected for real-time analytics');
+    } else {
+      this.logger.warn('REDIS_URL not set, analytics running without real-time events');
     }
   }
 

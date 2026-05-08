@@ -53,16 +53,12 @@ export class InventoryService implements OnModuleInit {
     @InjectRepository(InventoryItem)
     private repo: Repository<InventoryItem>,
   ) {
-    try {
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      this.redisSub = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-      this.redisSub.on('error', () => {
-        console.warn('[Inventory] Redis not available, running without pub/sub');
-        this.redisSub = null;
-      });
-    } catch {
-      console.warn('[Inventory] Redis not available, running without pub/sub');
-      this.redisSub = null;
+    const redisUrl = process.env.REDIS_URL;
+    if (redisUrl) {
+      this.redisSub = new Redis(redisUrl);
+      console.log('[Inventory] Redis connected for pub/sub');
+    } else {
+      console.warn('[Inventory] REDIS_URL not set, running without pub/sub');
     }
   }
 

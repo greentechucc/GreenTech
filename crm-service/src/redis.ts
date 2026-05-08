@@ -1,17 +1,9 @@
 import Redis from 'ioredis';
 
-let redisInstance: Redis | null = null;
+const redisUrl = process.env.REDIS_URL;
 
-try {
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  redisInstance = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-  redisInstance.on('error', () => {
-    console.warn('[CRM] Redis not available, running without pub/sub');
-    redisInstance = null;
-  });
-} catch {
-  console.warn('[CRM] Redis not available, running without pub/sub');
-  redisInstance = null;
+export const redis: Redis | null = redisUrl ? new Redis(redisUrl) : null;
+
+if (!redisUrl) {
+  console.warn('[CRM] REDIS_URL not set, running without pub/sub');
 }
-
-export const redis = redisInstance;

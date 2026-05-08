@@ -30,14 +30,12 @@ export class ProjectService {
     @InjectRepository(Incident)
     private incidentRepo: Repository<Incident>,
   ) {
-    try {
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      this.redisClient = new Redis(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-      this.redisClient.on('error', () => { this.redisClient = null; });
-      console.log('[ProjectService] Redis connected (optional)');
-    } catch {
-      console.warn('[ProjectService] Redis not available, running without pub/sub');
-      this.redisClient = null;
+    const redisUrl = process.env.REDIS_URL;
+    if (redisUrl) {
+      this.redisClient = new Redis(redisUrl);
+      console.log('[ProjectService] Redis connected');
+    } else {
+      console.warn('[ProjectService] REDIS_URL not set, running without pub/sub');
     }
   }
 
