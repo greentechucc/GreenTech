@@ -187,7 +187,7 @@ export class MailService {
                   <p style="color:#64748b;font-size:15px;margin:0 0 20px;line-height:1.6;">
                     Accede ahora a tu portal y comienza a explorar todas las herramientas que hemos preparado para ti.
                   </p>
-                  <a href="http://localhost:3011" style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:14px;font-size:16px;font-weight:700;letter-spacing:0.3px;">
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3011'}" style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:14px;font-size:16px;font-weight:700;letter-spacing:0.3px;">
                     Ingresar a Mi Portal →
                   </a>
                 </td>
@@ -274,7 +274,7 @@ export class MailService {
   }
 
   private buildSecurityAlertHtml(userName: string, unlockToken: string): string {
-    const unlockUrl = `http://localhost:3011/auth/unlock?token=${unlockToken}`;
+    const unlockUrl = `${process.env.FRONTEND_URL || 'http://localhost:3011'}/auth/unlock?token=${unlockToken}`;
     return `
     <!DOCTYPE html>
     <html lang="es">
@@ -335,7 +335,7 @@ export class MailService {
                 <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">Alguien solicitó una recuperación de contraseña para este correo, pero <b>no hemos encontrado una cuenta de GreenTech vinculada</b> a ti.</p>
                 <p style="color:#64748b;font-size:16px;line-height:1.6;margin:0 0 24px;">¡No te preocupes! Si eres cliente de nuestros proyectos de energía solar, puedes crear tu cuenta ahora mismo y empezar a disfrutar de telemetría y monitoreo inteligente.</p>
                 <div style="text-align:center;">
-                  <a href="http://localhost:3011/auth?view=register" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-weight:700;">Crear mi Cuenta</a>
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3011'}/auth?view=register" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-weight:700;">Crear mi Cuenta</a>
                 </div>
             </td></tr>
           </table>

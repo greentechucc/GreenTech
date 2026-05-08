@@ -63,9 +63,9 @@ let PortalService = class PortalService {
     ticketRepo;
     mailService;
     jwtService;
-    PROJECT_API = 'http://localhost:3003';
-    MONITORING_API = 'http://localhost:3007';
-    BILLING_API = 'http://localhost:3008';
+    PROJECT_API = process.env.PROJECT_SERVICE_URL || 'http://localhost:3003';
+    MONITORING_API = process.env.MONITORING_SERVICE_URL || 'http://localhost:3007';
+    BILLING_API = process.env.BILLING_SERVICE_URL || 'http://localhost:3008';
     constructor(userRepo, ticketRepo, mailService, jwtService) {
         this.userRepo = userRepo;
         this.ticketRepo = ticketRepo;
