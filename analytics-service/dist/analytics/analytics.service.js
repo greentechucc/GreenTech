@@ -28,18 +28,14 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
     logger = new common_1.Logger(AnalyticsService_1.name);
     constructor(kpiRepo) {
         this.kpiRepo = kpiRepo;
-        try {
-            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-            this.redisSub = new ioredis_1.default(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-            this.redisSub.on('error', () => {
-                this.logger.warn('Redis not available, analytics running without real-time events');
-                this.redisSub = null;
-            });
+        const redisUrl = process.env.REDIS_URL;
+        if (redisUrl) {
+            this.redisSub = new ioredis_1.default(redisUrl);
             this.initSubscriptions();
+            this.logger.log('Redis connected for real-time analytics');
         }
-        catch {
-            this.logger.warn('Redis not available, analytics running without real-time events');
-            this.redisSub = null;
+        else {
+            this.logger.warn('REDIS_URL not set, analytics running without real-time events');
         }
     }
     initSubscriptions() {

@@ -12,7 +12,6 @@ import { AuthModule } from './auth/auth.module';
       username: process.env.DATABASE_USER || 'postgres',
       password: process.env.DATABASE_PASSWORD || 'postgres',
       database: process.env.DATABASE_NAME || 'crm_db',
-      entityPrefix: 'crm_',
       autoLoadEntities: true,
       synchronize: true,
     }),

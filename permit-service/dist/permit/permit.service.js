@@ -41,18 +41,15 @@ let PermitService = PermitService_1 = class PermitService {
         this.permitRepository = permitRepository;
         this.documentRepository = documentRepository;
         this.utilityReqRepository = utilityReqRepository;
-        try {
-            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-            this.redisPub = new ioredis_1.default(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-            this.redisSub = new ioredis_1.default(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-            this.redisPub.on('error', () => { this.redisPub = null; });
-            this.redisSub.on('error', () => { this.redisSub = null; });
+        const redisUrl = process.env.REDIS_URL;
+        if (redisUrl) {
+            this.redisPub = new ioredis_1.default(redisUrl);
+            this.redisSub = new ioredis_1.default(redisUrl);
             this.initSubscriptions();
+            this.logger.log('Redis connected for permit pub/sub');
         }
-        catch {
-            this.logger.warn('Redis not available, permit service running without pub/sub');
-            this.redisPub = null;
-            this.redisSub = null;
+        else {
+            this.logger.warn('REDIS_URL not set, permit service running without pub/sub');
         }
     }
     async onModuleInit() {

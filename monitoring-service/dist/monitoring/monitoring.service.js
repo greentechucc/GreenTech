@@ -33,17 +33,13 @@ let MonitoringService = MonitoringService_1 = class MonitoringService {
         this.telemetryRepo = telemetryRepo;
         this.inverterRepo = inverterRepo;
         this.dataSource = dataSource;
-        try {
-            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-            this.redisPub = new ioredis_1.default(redisUrl, { maxRetriesPerRequest: 1, retryStrategy: () => null });
-            this.redisPub.on('error', () => {
-                this.logger.warn('Redis not available, monitoring running without pub/sub');
-                this.redisPub = null;
-            });
+        const redisUrl = process.env.REDIS_URL;
+        if (redisUrl) {
+            this.redisPub = new ioredis_1.default(redisUrl);
+            this.logger.log('Redis connected for monitoring alerts');
         }
-        catch {
-            this.logger.warn('Redis not available, monitoring running without pub/sub');
-            this.redisPub = null;
+        else {
+            this.logger.warn('REDIS_URL not set, monitoring running without pub/sub');
         }
     }
     async onApplicationBootstrap() {
