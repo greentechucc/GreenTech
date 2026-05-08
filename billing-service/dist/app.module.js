@@ -28,7 +28,6 @@ exports.AppModule = AppModule = __decorate([
                 username: process.env.DATABASE_USER || 'postgres',
                 password: process.env.DATABASE_PASSWORD || 'postgres',
                 database: process.env.DATABASE_NAME || 'billing_db',
-                entityPrefix: 'billing_',
                 autoLoadEntities: true,
                 synchronize: true,
                 entities: [audit_log_entity_1.AuditLog],

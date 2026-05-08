@@ -46,46 +46,46 @@ export class GatewayController {
 
   @All('crm/*path')
   async proxyCrm(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3001', '/crm')(req, res);
+    return this.createProxy(process.env.CRM_SERVICE_URL || 'http://localhost:3001', '/crm')(req, res);
   }
 
   @All('quotation/*path')
   async proxyQuotation(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3002', '/quotation')(req, res);
+    return this.createProxy(process.env.QUOTATION_SERVICE_URL || 'http://localhost:3002', '/quotation')(req, res);
   }
 
   @All('inventory/*path')
   async proxyInventory(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3002', '/inventory')(req, res);
+    return this.createProxy(process.env.QUOTATION_SERVICE_URL || 'http://localhost:3002', '/inventory')(req, res);
   }
 
   @All('projects/*path')
   async proxyProjects(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3003', '/projects')(req, res);
+    return this.createProxy(process.env.PROJECT_SERVICE_URL || 'http://localhost:3003', '/projects')(req, res);
   }
 
   @All('permits/*path')
   async proxyPermits(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3006', '/permits')(req, res);
+    return this.createProxy(process.env.PERMIT_SERVICE_URL || 'http://localhost:3006', '/permits')(req, res);
   }
 
   @All('monitoring/*path')
   async proxyMonitoring(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3007', '/monitoring')(req, res);
+    return this.createProxy(process.env.MONITORING_SERVICE_URL || 'http://localhost:3007', '/monitoring')(req, res);
   }
 
   @All('billing/*path')
   async proxyBilling(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3008', '/billing')(req, res);
+    return this.createProxy(process.env.BILLING_SERVICE_URL || 'http://localhost:3008', '/billing')(req, res);
   }
 
   @All('portal/*path')
   async proxyPortal(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3009', '/portal')(req, res);
+    return this.createProxy(process.env.PORTAL_SERVICE_URL || 'http://localhost:3009', '/portal')(req, res);
   }
 
   @All('analytics/*path')
   async proxyAnalytics(@Req() req: Request, @Res() res: Response) {
-    return this.createProxy('http://localhost:3010', '/analytics')(req, res);
+    return this.createProxy(process.env.ANALYTICS_SERVICE_URL || 'http://localhost:3010', '/analytics')(req, res);
   }
 }
