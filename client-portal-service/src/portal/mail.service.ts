@@ -424,7 +424,7 @@ export class MailService {
     }
   }
 
-  private buildNoAccountHtml(): string {
+  private buildNoAccountHtml(toEmail: string = ''): string {
     const portalUrl = process.env.FRONTEND_URL || 'http://localhost:3011';
     const year = new Date().getFullYear();
     return `
