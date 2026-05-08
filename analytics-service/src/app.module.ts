@@ -13,8 +13,10 @@ import { AnalyticsModule } from './analytics/analytics.module';
       username: process.env.DATABASE_USER || 'postgres',
       password: process.env.DATABASE_PASSWORD || 'postgres',
       database: process.env.DATABASE_NAME || 'analytics_db',
+      schema: 'analytics',
       autoLoadEntities: true,
-      synchronize: true, // Dev
+      synchronize: true,
+      entities: [AuditLog],
     }),
     AnalyticsModule,
   ],
