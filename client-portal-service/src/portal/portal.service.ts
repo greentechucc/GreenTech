@@ -10,9 +10,9 @@ import axios from 'axios';
 
 @Injectable()
 export class PortalService {
-  private readonly PROJECT_API = 'http://localhost:3003';
-  private readonly MONITORING_API = 'http://localhost:3007';
-  private readonly BILLING_API = 'http://localhost:3008';
+  private readonly PROJECT_API = process.env.PROJECT_SERVICE_URL || 'http://localhost:3003';
+  private readonly MONITORING_API = process.env.MONITORING_SERVICE_URL || 'http://localhost:3007';
+  private readonly BILLING_API = process.env.BILLING_SERVICE_URL || 'http://localhost:3008';
 
   constructor(
     @InjectRepository(CustomerUser)
@@ -21,7 +21,7 @@ export class PortalService {
     private ticketRepo: Repository<Ticket>,
     private mailService: MailService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(data: any) {
     const existing = await this.userRepo.findOneBy({ email: data.email });
@@ -37,7 +37,7 @@ export class PortalService {
     const saved = await this.userRepo.save(user);
 
     // Enviar correo de bienvenida (no bloquea la respuesta)
-    this.mailService.sendWelcomeEmail(saved.email, saved.name).catch(() => {});
+    this.mailService.sendWelcomeEmail(saved.email, saved.name).catch(() => { });
 
     const payload = { sub: saved.id, email: saved.email, role: 'Cliente', name: saved.name };
     return {
@@ -81,13 +81,13 @@ export class PortalService {
         const lockTime = new Date();
         lockTime.setHours(lockTime.getHours() + 1);
         user.login_locked_until = lockTime;
-        
+
         const token = require('crypto').randomUUID();
         user.unlock_token = token;
         await this.userRepo.save(user);
 
-        this.mailService.sendSecurityAlertEmail(email, user.name, token).catch(() => {});
-        
+        this.mailService.sendSecurityAlertEmail(email, user.name, token).catch(() => { });
+
         throw new HttpException(`Demasiados intentos fallidos. Te hemos enviado un correo para desbloquear tu cuenta.`, HttpStatus.FORBIDDEN);
       }
       await this.userRepo.save(user);
@@ -240,7 +240,7 @@ export class PortalService {
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     const isMatch = await bcrypt.compare(currentPass, user.password_hash);
     if (!isMatch) {
-       throw new HttpException('Contraseña actual inválida', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Contraseña actual inválida', HttpStatus.BAD_REQUEST);
     }
     user.password_hash = await bcrypt.hash(newPass, 10);
     await this.userRepo.save(user);
@@ -258,7 +258,7 @@ export class PortalService {
   async forgotPassword(email: string) {
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) {
-      this.mailService.sendNoAccountEmail(email).catch(() => {});
+      this.mailService.sendNoAccountEmail(email).catch(() => { });
       throw new HttpException('Este correo no tiene cuenta asociada.', HttpStatus.NOT_FOUND);
     }
 
@@ -275,7 +275,7 @@ export class PortalService {
     user.reset_expires_at = expiresAt;
     await this.userRepo.save(user);
 
-    this.mailService.sendResetEmail(email, code, user.name).catch(() => {});
+    this.mailService.sendResetEmail(email, code, user.name).catch(() => { });
     return { success: true };
   }
 
@@ -304,7 +304,7 @@ export class PortalService {
     }
 
     if (new Date() > new Date(user.reset_expires_at)) {
-       throw new HttpException('El código de seguridad ha expirado', HttpStatus.BAD_REQUEST);
+      throw new HttpException('El código de seguridad ha expirado', HttpStatus.BAD_REQUEST);
     }
 
     return { success: true };
