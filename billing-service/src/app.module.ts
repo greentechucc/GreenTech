@@ -16,7 +16,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
       username: process.env.DATABASE_USER || 'postgres',
       password: process.env.DATABASE_PASSWORD || 'postgres',
       database: process.env.DATABASE_NAME || 'billing_db',
-      schema: 'billing',
+      entityPrefix: 'billing_',
       autoLoadEntities: true,
       synchronize: true,
       entities: [AuditLog],
