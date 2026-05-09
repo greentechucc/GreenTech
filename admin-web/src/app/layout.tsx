@@ -17,12 +17,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      <body className={`${outfit.className} bg-background text-foreground antialiased min-h-screen flex`}>
-        <div className="bg-grid"></div>
-        <Sidebar />
-        <main className="flex-1 ml-[18rem] p-8 h-screen overflow-y-auto">
-          {children}
-        </main>
+      <body className={`${outfit.className} bg-background text-foreground antialiased min-h-screen`}>
+        {children}
       </body>
     </html>
   );

@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, Users, FileText, Briefcase, 
   Package, CheckSquare, Activity, CreditCard, 
-  LogOut, Shield, UserCircle, LifeBuoy
+  LogOut, Shield, UserCircle, LifeBuoy, Menu, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
@@ -30,6 +30,7 @@ export function Sidebar() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userName, setUserName] = useState('');
   const [userAvatar, setUserAvatar] = useState<string | undefined>(undefined);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -66,61 +67,89 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-64 h-screen border-r border-border glass flex flex-col m-4 rounded-2xl overflow-hidden fixed z-50">
-      <div className="p-6 border-b border-border">
-        <h2 className="text-2xl font-semibold bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent flex items-center gap-2">
+    <>
+      {/* Mobile Top Bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 glass z-40 border-b border-border flex items-center justify-between px-4">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent flex items-center gap-2">
           ☀️ GreenTech
         </h2>
-      </div>
-
-      <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
-        {filteredRoutes.map((route) => {
-          const isActive = pathname.startsWith(route.path);
-          return (
-            <Link 
-              key={route.path} 
-              href={route.path}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium",
-                isActive 
-                  ? "bg-primary text-white shadow-lg shadow-emerald-500/20" 
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-              )}
-            >
-              <route.icon size={20} />
-              {route.name}
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* User info + Logout */}
-      <div className="p-4 border-t border-border mt-auto space-y-3">
-        {userRole && (
-          <Link href="/perfil" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-all cursor-pointer group">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
-              {userAvatar ? (
-                <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                userName.charAt(0).toUpperCase()
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-200 truncate group-hover:text-white transition-colors">{userName}</p>
-              <span className={cn("text-xs px-2 py-0.5 rounded-full border font-semibold", roleColors[userRole])}>
-                {userRole}
-              </span>
-            </div>
-          </Link>
-        )}
         <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 text-slate-300 hover:text-white bg-slate-800/50 rounded-lg border border-border"
         >
-          <LogOut size={20} />
-          Cerrar Sesión
+          {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
-    </aside>
+
+      {/* Backdrop */}
+      {isOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Drawer */}
+      <aside className={cn(
+        "w-64 h-[calc(100vh-2rem)] border-r border-border glass flex flex-col m-4 rounded-2xl overflow-hidden fixed z-50 transition-transform duration-300 ease-in-out md:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-[110%] md:translate-x-0"
+      )}>
+        <div className="p-6 border-b border-border hidden md:block">
+          <h2 className="text-2xl font-semibold bg-gradient-to-r from-primary to-emerald-300 bg-clip-text text-transparent flex items-center gap-2">
+            ☀️ GreenTech
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2">
+          {filteredRoutes.map((route) => {
+            const isActive = pathname.startsWith(route.path);
+            return (
+              <Link 
+                key={route.path} 
+                href={route.path}
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium",
+                  isActive 
+                    ? "bg-primary text-white shadow-lg shadow-emerald-500/20" 
+                    : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                )}
+              >
+                <route.icon size={20} />
+                {route.name}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* User info + Logout */}
+        <div className="p-4 border-t border-border mt-auto space-y-3">
+          {userRole && (
+            <Link onClick={() => setIsOpen(false)} href="/perfil" className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800/50 transition-all cursor-pointer group">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
+                {userAvatar ? (
+                  <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  userName.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-200 truncate group-hover:text-white transition-colors">{userName}</p>
+                <span className={cn("text-xs px-2 py-0.5 rounded-full border font-semibold", roleColors[userRole])}>
+                  {userRole}
+                </span>
+              </div>
+            </Link>
+          )}
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+          >
+            <LogOut size={20} />
+            Cerrar Sesión
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

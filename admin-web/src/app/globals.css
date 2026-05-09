@@ -25,6 +25,9 @@
   .glass {
     @apply bg-card border border-border backdrop-blur-xl shadow-xl rounded-xl;
   }
+  .glass-premium {
+    @apply bg-slate-900/40 border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)];
+  }
 }
 
 /* Background Effects */

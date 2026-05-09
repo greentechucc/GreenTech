@@ -48,17 +48,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
-      <div className="bg-grid"></div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0f172a]">
+      {/* Background Orbs/Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-600/30 rounded-full blur-[120px] mix-blend-screen opacity-50 animate-pulse" style={{ animationDuration: '4s' }}></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-600/30 rounded-full blur-[120px] mix-blend-screen opacity-50 animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }}></div>
+      <div className="absolute top-[20%] right-[20%] w-[30%] h-[30%] bg-emerald-400/20 rounded-full blur-[100px] mix-blend-screen opacity-40"></div>
+      
+      <div className="bg-grid absolute inset-0 opacity-40"></div>
+      
       <div
         className="fixed top-[-50%] left-[-50%] w-[200%] h-[200%] -z-10"
         style={{
-          background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.1), transparent 60%)',
+          background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05), transparent 60%)',
           animation: 'rotate 60s linear infinite'
         }}
       />
 
-      <div className="glass p-8 w-full max-w-md relative z-10 transition-transform duration-500 ease-out translate-y-0 opacity-100">
+      <div className="glass-premium p-8 sm:p-10 w-full max-w-md relative z-10 transition-transform duration-500 ease-out translate-y-0 opacity-100 rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.37)] backdrop-blur-xl">
         <div className="text-center mb-8">
           <div className="text-4xl mb-2 flex justify-center items-center gap-2">
             ☀️ <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 text-3xl tracking-tight">GreenTech</span>
