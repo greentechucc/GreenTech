@@ -16,11 +16,12 @@ export class MailService {
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
+      family: 4, // Ignora IPv6 nativamente y evita colisiones ENETUNREACH
       auth: {
         user: process.env.SMTP_USER || 'greentechucc@gmail.com',
         pass: process.env.SMTP_PASS || 'invalidated_pass', // Avoid 535 errors crashing the UX
       },
-    });
+    } as any);
   }
 
   async sendWelcomeEmail(toEmail: string, userName: string) {
