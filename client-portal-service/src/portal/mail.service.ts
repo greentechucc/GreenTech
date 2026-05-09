@@ -12,13 +12,17 @@ export class MailService {
   async sendWelcomeEmail(toEmail: string, userName: string) {
     const html = this.buildWelcomeHtml(userName);
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'GreenTech Solutions <onboarding@resend.dev>',
         to: toEmail,
         subject: '☀️ ¡Bienvenido a GreenTech Solutions!',
         html,
       });
-      console.log(`[MailService] Welcome email sent to ${toEmail}`);
+      if (error) {
+        console.error(`[MailService] Resend API Error (Welcome):`, error);
+        return;
+      }
+      console.log(`[MailService] Welcome email sent to ${toEmail}, ID: ${data?.id}`);
     } catch (error) {
       console.error(`[MailService] Failed to send welcome email:`, error);
     }
@@ -121,13 +125,17 @@ export class MailService {
   async sendResetEmail(toEmail: string, code: string, userName: string) {
     const html = this.buildResetHtml(code, userName);
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'GreenTech Seguridad <onboarding@resend.dev>',
         to: toEmail,
         subject: '🔒 Tu código de verificación — GreenTech',
         html,
       });
-      console.log(`[MailService] Reset OTP sent to ${toEmail}`);
+      if (error) {
+        console.error(`[MailService] Resend API Error (Reset):`, error);
+        return;
+      }
+      console.log(`[MailService] Reset OTP sent to ${toEmail}, ID: ${data?.id}`);
     } catch (error) {
       console.error(`[MailService] Failed to send reset email:`, error);
     }
@@ -192,13 +200,17 @@ export class MailService {
   async sendSecurityAlertEmail(toEmail: string, userName: string, unlockToken: string) {
     const html = this.buildSecurityAlertHtml(userName, unlockToken);
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'GreenTech Seguridad <onboarding@resend.dev>',
         to: toEmail,
         subject: '🚨 Alerta: Tu cuenta ha sido bloqueada — GreenTech',
         html,
       });
-      console.log(`[MailService] Security alert sent to ${toEmail}`);
+      if (error) {
+        console.error(`[MailService] Resend API Error (Security Alert):`, error);
+        return;
+      }
+      console.log(`[MailService] Security alert sent to ${toEmail}, ID: ${data?.id}`);
     } catch (error) {
       console.error(`[MailService] Failed to send security alert:`, error);
     }
@@ -267,13 +279,17 @@ export class MailService {
   async sendNoAccountEmail(toEmail: string) {
     const html = this.buildNoAccountHtml(toEmail);
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'GreenTech Soporte <onboarding@resend.dev>',
         to: toEmail,
         subject: '🌱 ¿Aún no tienes cuenta? Únete a GreenTech',
         html,
       });
-      console.log(`[MailService] No-account invitation sent to ${toEmail}`);
+      if (error) {
+        console.error(`[MailService] Resend API Error (No-Account):`, error);
+        return;
+      }
+      console.log(`[MailService] No-account invitation sent to ${toEmail}, ID: ${data?.id}`);
     } catch (error) {
       console.error(`[MailService] Failed to send no-account email:`, error);
     }
