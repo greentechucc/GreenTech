@@ -1,28 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
-  private resend: Resend;
+  private transporter: nodemailer.Transporter;
 
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY || '');
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
   }
 
   async sendWelcomeEmail(toEmail: string, userName: string) {
     const html = this.buildWelcomeHtml(userName);
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'GreenTech Solutions <onboarding@resend.dev>',
+      const info = await this.transporter.sendMail({
+        from: `"GreenTech Solutions" <${process.env.SMTP_USER}>`,
         to: toEmail,
         subject: '☀️ ¡Bienvenido a GreenTech Solutions!',
         html,
       });
-      if (error) {
-        console.error(`[MailService] Resend API Error (Welcome):`, error);
-        return;
-      }
-      console.log(`[MailService] Welcome email sent to ${toEmail}, ID: ${data?.id}`);
+      console.log(`[MailService] Welcome email sent to ${toEmail}, ID: ${info.messageId}`);
     } catch (error) {
       console.error(`[MailService] Failed to send welcome email:`, error);
     }
@@ -125,17 +127,13 @@ export class MailService {
   async sendResetEmail(toEmail: string, code: string, userName: string) {
     const html = this.buildResetHtml(code, userName);
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'GreenTech Seguridad <onboarding@resend.dev>',
+      const info = await this.transporter.sendMail({
+        from: `"GreenTech Seguridad" <${process.env.SMTP_USER}>`,
         to: toEmail,
         subject: '🔒 Tu código de verificación — GreenTech',
         html,
       });
-      if (error) {
-        console.error(`[MailService] Resend API Error (Reset):`, error);
-        return;
-      }
-      console.log(`[MailService] Reset OTP sent to ${toEmail}, ID: ${data?.id}`);
+      console.log(`[MailService] Reset OTP sent to ${toEmail}, ID: ${info.messageId}`);
     } catch (error) {
       console.error(`[MailService] Failed to send reset email:`, error);
     }
@@ -200,17 +198,13 @@ export class MailService {
   async sendSecurityAlertEmail(toEmail: string, userName: string, unlockToken: string) {
     const html = this.buildSecurityAlertHtml(userName, unlockToken);
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'GreenTech Seguridad <onboarding@resend.dev>',
+      const info = await this.transporter.sendMail({
+        from: `"GreenTech Seguridad" <${process.env.SMTP_USER}>`,
         to: toEmail,
         subject: '🚨 Alerta: Tu cuenta ha sido bloqueada — GreenTech',
         html,
       });
-      if (error) {
-        console.error(`[MailService] Resend API Error (Security Alert):`, error);
-        return;
-      }
-      console.log(`[MailService] Security alert sent to ${toEmail}, ID: ${data?.id}`);
+      console.log(`[MailService] Security alert sent to ${toEmail}, ID: ${info.messageId}`);
     } catch (error) {
       console.error(`[MailService] Failed to send security alert:`, error);
     }
@@ -279,17 +273,13 @@ export class MailService {
   async sendNoAccountEmail(toEmail: string) {
     const html = this.buildNoAccountHtml(toEmail);
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'GreenTech Soporte <onboarding@resend.dev>',
+      const info = await this.transporter.sendMail({
+        from: `"GreenTech Soporte" <${process.env.SMTP_USER}>`,
         to: toEmail,
         subject: '🌱 ¿Aún no tienes cuenta? Únete a GreenTech',
         html,
       });
-      if (error) {
-        console.error(`[MailService] Resend API Error (No-Account):`, error);
-        return;
-      }
-      console.log(`[MailService] No-account invitation sent to ${toEmail}, ID: ${data?.id}`);
+      console.log(`[MailService] No-account invitation sent to ${toEmail}, ID: ${info.messageId}`);
     } catch (error) {
       console.error(`[MailService] Failed to send no-account email:`, error);
     }
