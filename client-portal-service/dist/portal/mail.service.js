@@ -1,32 +1,71 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MailService = void 0;
 const common_1 = require("@nestjs/common");
-const resend_1 = require("resend");
+const nodemailer = __importStar(require("nodemailer"));
 let MailService = class MailService {
-    resend;
+    transporter;
     constructor() {
-        this.resend = new resend_1.Resend(process.env.RESEND_API_KEY || '');
+        this.transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+        });
     }
     async sendWelcomeEmail(toEmail, userName) {
         const html = this.buildWelcomeHtml(userName);
         try {
-            await this.resend.emails.send({
-                from: 'GreenTech Solutions <onboarding@resend.dev>',
+            const info = await this.transporter.sendMail({
+                from: `"GreenTech Solutions" <${process.env.SMTP_USER}>`,
                 to: toEmail,
                 subject: '☀️ ¡Bienvenido a GreenTech Solutions!',
                 html,
             });
-            console.log(`[MailService] Welcome email sent to ${toEmail}`);
+            console.log(`[MailService] Welcome email sent to ${toEmail}, ID: ${info.messageId}`);
         }
         catch (error) {
             console.error(`[MailService] Failed to send welcome email:`, error);
@@ -128,13 +167,13 @@ let MailService = class MailService {
     async sendResetEmail(toEmail, code, userName) {
         const html = this.buildResetHtml(code, userName);
         try {
-            await this.resend.emails.send({
-                from: 'GreenTech Seguridad <onboarding@resend.dev>',
+            const info = await this.transporter.sendMail({
+                from: `"GreenTech Seguridad" <${process.env.SMTP_USER}>`,
                 to: toEmail,
                 subject: '🔒 Tu código de verificación — GreenTech',
                 html,
             });
-            console.log(`[MailService] Reset OTP sent to ${toEmail}`);
+            console.log(`[MailService] Reset OTP sent to ${toEmail}, ID: ${info.messageId}`);
         }
         catch (error) {
             console.error(`[MailService] Failed to send reset email:`, error);
@@ -198,13 +237,13 @@ let MailService = class MailService {
     async sendSecurityAlertEmail(toEmail, userName, unlockToken) {
         const html = this.buildSecurityAlertHtml(userName, unlockToken);
         try {
-            await this.resend.emails.send({
-                from: 'GreenTech Seguridad <onboarding@resend.dev>',
+            const info = await this.transporter.sendMail({
+                from: `"GreenTech Seguridad" <${process.env.SMTP_USER}>`,
                 to: toEmail,
                 subject: '🚨 Alerta: Tu cuenta ha sido bloqueada — GreenTech',
                 html,
             });
-            console.log(`[MailService] Security alert sent to ${toEmail}`);
+            console.log(`[MailService] Security alert sent to ${toEmail}, ID: ${info.messageId}`);
         }
         catch (error) {
             console.error(`[MailService] Failed to send security alert:`, error);
@@ -272,13 +311,13 @@ let MailService = class MailService {
     async sendNoAccountEmail(toEmail) {
         const html = this.buildNoAccountHtml(toEmail);
         try {
-            await this.resend.emails.send({
-                from: 'GreenTech Soporte <onboarding@resend.dev>',
+            const info = await this.transporter.sendMail({
+                from: `"GreenTech Soporte" <${process.env.SMTP_USER}>`,
                 to: toEmail,
                 subject: '🌱 ¿Aún no tienes cuenta? Únete a GreenTech',
                 html,
             });
-            console.log(`[MailService] No-account invitation sent to ${toEmail}`);
+            console.log(`[MailService] No-account invitation sent to ${toEmail}, ID: ${info.messageId}`);
         }
         catch (error) {
             console.error(`[MailService] Failed to send no-account email:`, error);

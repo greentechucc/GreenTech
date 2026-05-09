@@ -1,5 +1,5 @@
 export declare class MailService {
-    private resend;
+    private transporter;
     constructor();
     sendWelcomeEmail(toEmail: string, userName: string): Promise<void>;
     private buildWelcomeHtml;

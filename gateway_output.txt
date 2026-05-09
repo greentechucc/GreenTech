@@ -1,1 +1,0 @@
-{"success":false,"message":"Ruta /portal/auth/register no encontrada"}

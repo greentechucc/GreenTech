@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
+
+// Fix for Node >= 17 IPv6 ENETUNREACH errors globally across app resolving
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 @Injectable()
 export class MailService {
@@ -7,10 +13,12 @@ export class MailService {
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER || 'greentechucc@gmail.com',
+        pass: process.env.SMTP_PASS || 'invalidated_pass', // Avoid 535 errors crashing the UX
       },
     });
   }
