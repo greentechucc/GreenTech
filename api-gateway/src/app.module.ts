@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { GatewayController } from './gateway/gateway.controller';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
       limit: 100,
     }]),
     AuthModule,
+    MetricsModule,
   ],
   controllers: [AppController, GatewayController],
   providers: [

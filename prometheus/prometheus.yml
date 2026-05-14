@@ -1,0 +1,70 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:4000']
+        labels:
+          service: api-gateway
+
+  - job_name: 'crm-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3001']
+        labels:
+          service: crm-service
+
+  - job_name: 'quotation-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3002']
+        labels:
+          service: quotation-service
+
+  - job_name: 'project-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3003']
+        labels:
+          service: project-service
+
+  - job_name: 'permit-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3006']
+        labels:
+          service: permit-service
+
+  - job_name: 'monitoring-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3007']
+        labels:
+          service: monitoring-service
+
+  - job_name: 'billing-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3008']
+        labels:
+          service: billing-service
+
+  - job_name: 'client-portal-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3009']
+        labels:
+          service: client-portal-service
+
+  - job_name: 'analytics-service'
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['host.docker.internal:3010']
+        labels:
+          service: analytics-service

@@ -1,0 +1,46 @@
+groups:
+  - name: greentech_alerts
+    rules:
+      # Alerta: Servicio caído por más de 1 minuto
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔴 Servicio {{ $labels.job }} está caído"
+          description: "El servicio {{ $labels.job }} no responde desde hace más de 1 minuto."
+
+      # Alerta: Latencia alta (p95 > 2 segundos)
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ Latencia alta en {{ $labels.job }}"
+          description: "El percentil 95 de latencia en {{ $labels.job }} supera los 2 segundos."
+
+      # Alerta: Tasa de errores 5xx elevada (> 5% del tráfico)
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[5m])) by (job)
+          /
+          sum(rate(http_requests_total[5m])) by (job)
+          > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ Tasa de errores alta en {{ $labels.job }}"
+          description: "Más del 5% de las peticiones en {{ $labels.job }} están retornando errores 5xx."
+
+      # Alerta: Uso de memoria alto (> 500MB)
+      - alert: HighMemoryUsage
+        expr: nodejs_process_resident_memory_bytes / 1024 / 1024 > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ Uso de memoria alto en {{ $labels.job }}"
+          description: "El servicio {{ $labels.job }} está usando más de 500MB de RAM."

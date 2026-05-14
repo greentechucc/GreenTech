@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PermitModule } from './permit/permit.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PermitModule } from './permit/permit.module';
       synchronize: true, // Development only
     }),
     PermitModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { ProjectModule } from './project/project.module';
 import { AuditLog } from './common/entities/audit-log.entity';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
       entities: [AuditLog],
     }),
     ProjectModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [

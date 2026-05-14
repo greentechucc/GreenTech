@@ -7,6 +7,7 @@ import { QuotationModule } from './quotation/quotation.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { AuditLog } from './common/entities/audit-log.entity';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     }),
     QuotationModule,
     InventoryModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [

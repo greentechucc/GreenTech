@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MonitoringModule } from './monitoring/monitoring.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { MonitoringModule } from './monitoring/monitoring.module';
       synchronize: true, // Only for development; Timescale hypertable creation needs custom query
     }),
     MonitoringModule,
+    MetricsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
