@@ -267,3 +267,9 @@ services:
         fromDatabase:
           name: greentech-db-v2
           property: database
+      - key: PROJECT_SERVICE_URL
+        value: https://greentech-project-service-v2.onrender.com
+      - key: MONITORING_SERVICE_URL
+        value: https://greentech-monitoring-service-v2.onrender.com
+      - key: BILLING_SERVICE_URL
+        value: https://greentech-billing-service-v2.onrender.com
