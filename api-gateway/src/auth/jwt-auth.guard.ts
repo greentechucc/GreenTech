@@ -38,6 +38,7 @@ export class JwtAuthGuard implements CanActivate {
       '/portal/auth/verify-reset-code',
       '/portal/auth/reset-password',
       '/portal/auth/unlock',
+      '/metrics',
     ];
 
     if (publicPaths.some(p => path.startsWith(p))) {
