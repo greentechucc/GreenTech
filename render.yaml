@@ -1,0 +1,140 @@
+version: "1"
+
+databases:
+  - name: greentech-db-v2
+    databaseName: greentech_db
+    user: postgres
+    plan: free
+    region: ohio
+
+envVarGroups:
+  - name: greentech-db-credentials
+    envVars:
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: greentech-db-v2
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: greentech-db-v2
+          property: port
+      - key: DATABASE_USER
+        fromDatabase:
+          name: greentech-db-v2
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: greentech-db-v2
+          property: password
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: greentech-db-v2
+          property: database
+  - name: greentech-mail-credentials
+    envVars:
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: NODE_ENV
+        value: production
+
+services:
+  - type: web
+    name: greentech-api-gateway-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./api-gateway
+    envVars:
+      - key: CRM_SERVICE_URL
+        value: https://greentech-crm-service-v2.onrender.com
+      - key: QUOTATION_SERVICE_URL
+        value: https://greentech-quotation-service-v2.onrender.com
+      - key: PROJECT_SERVICE_URL
+        value: https://greentech-project-service-v2.onrender.com
+      - key: PERMIT_SERVICE_URL
+        value: https://greentech-permit-service-v2.onrender.com
+      - key: MONITORING_SERVICE_URL
+        value: https://greentech-monitoring-service-v2.onrender.com
+      - key: BILLING_SERVICE_URL
+        value: https://greentech-billing-service-v2.onrender.com
+      - key: ANALYTICS_SERVICE_URL
+        value: https://greentech-analytics-service-v2.onrender.com
+      - key: PORTAL_SERVICE_URL
+        value: https://greentech-client-portal-service-v2.onrender.com
+
+  - type: web
+    name: greentech-crm-service-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./crm-service
+    envVars:
+      - fromGroup: greentech-db-credentials
+
+  - type: web
+    name: greentech-quotation-service-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./quotation-service
+    envVars:
+      - fromGroup: greentech-db-credentials
+
+  - type: web
+    name: greentech-project-service-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./project-service
+    envVars:
+      - fromGroup: greentech-db-credentials
+
+  - type: web
+    name: greentech-permit-service-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./permit-service
+    envVars:
+      - fromGroup: greentech-db-credentials
+
+  - type: web
+    name: greentech-monitoring-service-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./monitoring-service
+    envVars:
+      - fromGroup: greentech-db-credentials
+
+  - type: web
+    name: greentech-billing-service-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./billing-service
+    envVars:
+      - fromGroup: greentech-db-credentials
+
+  - type: web
+    name: greentech-analytics-service-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./analytics-service
+    envVars:
+      - fromGroup: greentech-db-credentials
+
+  - type: web
+    name: greentech-client-portal-service-v2
+    env: docker
+    plan: free
+    region: ohio
+    rootDir: ./client-portal-service
+    envVars:
+      - fromGroup: greentech-db-credentials
+      - fromGroup: greentech-mail-credentials
