@@ -218,5 +218,5 @@
   "title": "GreenTech — Monitoreo de Microservicios",
   "uid": "greentech-overview",
   "version": 1,
-  "refresh": "10s"
+  "refresh": "5s"
 }
