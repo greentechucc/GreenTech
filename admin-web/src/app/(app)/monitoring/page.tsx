@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Plus, Activity, Sun, Wifi, WifiOff, Zap, Thermometer, AlertTriangle } from 'lucide-react';
 import api from '@/services/api';
@@ -8,6 +8,14 @@ import { Modal } from '@/components/ui/Modal';
 import { getCurrentUser } from '@/lib/mock-users';
 
 export default function MonitoringPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-[calc(100vh-4rem)]"><div className="text-slate-400 text-lg animate-pulse">Cargando monitoreo...</div></div>}>
+      <MonitoringContent />
+    </Suspense>
+  );
+}
+
+function MonitoringContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [inverters, setInverters] = useState<any[]>([]);
