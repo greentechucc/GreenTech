@@ -159,14 +159,14 @@ export default function CustomersPage() {
             {!isLoading && filteredUsers.map((u) => {
               const locked = isLocked(u.login_locked_until);
               return (
-                <tr key={u.id} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors group">
+                <tr key={u.id} onClick={() => router.push(`/users/clientes/${u.id}`)} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors cursor-pointer group">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
                         {u.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                         <span className="font-medium block">{u.name}</span>
+                         <span className="font-medium block group-hover:text-blue-400 transition-colors">{u.name}</span>
                          <span className="text-xs text-slate-400">ID: {u.id}</span>
                       </div>
                     </div>
@@ -203,8 +203,8 @@ export default function CustomersPage() {
                   </td>
                   <td className="p-4">
                      <button
-                       onClick={() => handleDelete(u.id, u.name)}
-                       className="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg border border-red-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100"
+                       onClick={(e) => { e.stopPropagation(); handleDelete(u.id, u.name); }}
+                       className="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-3 py-1.5 rounded-lg border border-red-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10"
                        title="Eliminar cliente"
                      >
                        <Trash2 size={16} /> Eliminar

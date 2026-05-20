@@ -38,6 +38,64 @@ export class AuthService implements OnModuleInit {
       }
       console.log('[Auth] Seeded 6 default staff users');
     }
+
+    // Asegurar que los auxiliares existan
+    const hasAux = await this.userRepo.findOneBy({ email: 'aux1.alfa@greentech.com' });
+    if (!hasAux) {
+       const newUsers = [
+          { name: 'Jefe Alfa (Norte)', email: 'tecnicocuadrillanorte@greentech.com', password: '12345', role: 'Tecnico', crew_name: 'Cuadrilla Alfa (Norte)' },
+          { name: 'Jefe Beta (Sur)', email: 'tecnicocuadrillasur@greentech.com', password: '12345', role: 'Tecnico', crew_name: 'Cuadrilla Beta (Sur)' },
+          { name: 'Jefe Omega (Centro)', email: 'tecnicocuadrillacentro@greentech.com', password: '12345', role: 'Tecnico', crew_name: 'Cuadrilla Omega (Centro)' },
+          { name: 'Jefe Subcontratista', email: 'tecnicosubcontratista@greentech.com', password: '12345', role: 'Tecnico', crew_name: 'Subcontratista Energía Global' }
+       ];
+       
+       const cuadrillas = ['Cuadrilla Alfa (Norte)', 'Cuadrilla Beta (Sur)', 'Cuadrilla Omega (Centro)', 'Subcontratista Energía Global'];
+       const prefixes = ['alfa', 'beta', 'omega', 'sub'];
+       let auxCounter = 1;
+       
+       for (let c = 0; c < 4; c++) {
+         for (let i = 1; i <= 5; i++) {
+            newUsers.push({
+               name: `Auxiliar ${auxCounter} (${cuadrillas[c]})`,
+               email: `aux${i}.${prefixes[c]}@greentech.com`,
+               password: '12345',
+               role: 'Auxiliar',
+               crew_name: cuadrillas[c]
+            });
+            auxCounter++;
+         }
+       }
+
+       for (const u of newUsers) {
+         const exists = await this.userRepo.findOneBy({ email: u.email });
+         if (!exists) {
+           const hash = await bcrypt.hash(u.password, 10);
+           await this.userRepo.save(this.userRepo.create({
+             name: u.name,
+             email: u.email,
+             password_hash: hash,
+             role: u.role,
+             crew_name: u.crew_name,
+             active: true,
+           }));
+         } else if (!exists.crew_name && u.crew_name) {
+           exists.crew_name = u.crew_name;
+           await this.userRepo.save(exists);
+         }
+       }
+       
+       const oldTecnico = await this.userRepo.findOneBy({ email: 'tecnico@greentech.com' });
+       if (oldTecnico) {
+          await this.userRepo.remove(oldTecnico);
+       }
+       console.log('[Auth] Creamos Cuadrillas (Jefes y Auxiliares) en la BD');
+    }
+    
+    // Auto-patch Jefes que se hayan creado antes sin crew_name
+    await this.userRepo.update({ email: 'tecnicocuadrillanorte@greentech.com' }, { crew_name: 'Cuadrilla Alfa (Norte)' });
+    await this.userRepo.update({ email: 'tecnicocuadrillasur@greentech.com' }, { crew_name: 'Cuadrilla Beta (Sur)' });
+    await this.userRepo.update({ email: 'tecnicocuadrillacentro@greentech.com' }, { crew_name: 'Cuadrilla Omega (Centro)' });
+    await this.userRepo.update({ email: 'tecnicosubcontratista@greentech.com' }, { crew_name: 'Subcontratista Energía Global' });
   }
 
   async login(email: string, password: string) {
@@ -61,6 +119,7 @@ export class AuthService implements OnModuleInit {
         name: user.name,
         email: user.email,
         role: user.role,
+        crew_name: user.crew_name,
       },
     };
   }
@@ -81,6 +140,7 @@ export class AuthService implements OnModuleInit {
           name: user.name,
           email: user.email,
           role: user.role,
+          crew_name: user.crew_name,
         },
       };
     } catch {
@@ -90,7 +150,7 @@ export class AuthService implements OnModuleInit {
 
   async getStaffUsers() {
     return this.userRepo.find({
-      select: ['id', 'name', 'email', 'role', 'active', 'created_at'],
+      select: ['id', 'name', 'email', 'role', 'active', 'crew_name', 'created_at'],
     });
   }
 

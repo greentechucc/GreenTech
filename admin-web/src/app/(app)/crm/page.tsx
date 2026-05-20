@@ -199,8 +199,8 @@ export default function CRMPage() {
               </td></tr>
             )}
             {filteredProspects.map(p => (
-              <tr key={p.id} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors group">
-                <td className="p-4 font-medium">{p.name}</td>
+              <tr key={p.id} onClick={() => router.push(`/crm/${p.id}`)} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors cursor-pointer group">
+                <td className="p-4 font-medium group-hover:text-emerald-400 transition-colors">{p.name}</td>
                 <td className="p-4">
                   <div className="flex flex-col gap-1">
                     <span className="text-sm flex items-center gap-2 text-slate-300"><Mail size={14}/> {p.email}</span>
@@ -209,11 +209,11 @@ export default function CRMPage() {
                 </td>
                 <td className="p-4 text-slate-300 text-sm">{p.source || 'Directo'}</td>
                 <td className="p-4 text-cyan-400 text-sm">{p.assigned_rep || 'Sin Asignar'}</td>
-                <td className="p-4">
+                <td className="p-4" onClick={(e) => e.stopPropagation()}>
                   <select 
                     value={p.status || 'NEW'} 
                     onChange={(e) => handleStatusChange(p.id, e.target.value)}
-                    className={`bg-slate-900 border border-slate-700/50 rounded drop-shadow px-2 py-1 text-xs font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer ${statusColor(p.status)}`}
+                    className={`bg-slate-900 border border-slate-700/50 rounded drop-shadow px-2 py-1 text-xs font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer relative z-10 ${statusColor(p.status)}`}
                   >
                     {['NEW', 'CONTACTED', 'QUALIFIED', 'QUOTED', 'NEGOTIATION', 'WON', 'LOST'].map(s => (
                       <option key={s} value={s} className="text-slate-300">{s}</option>
@@ -223,18 +223,18 @@ export default function CRMPage() {
                 <td className="p-4">
                   <div className="flex gap-2">
                     {p.status?.toUpperCase() !== 'WON' ? (
-                      <button onClick={() => handleConvertir(p)} className="text-emerald-400 hover:text-emerald-300 bg-emerald-400/10 hover:bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100">
+                      <button onClick={(e) => { e.stopPropagation(); handleConvertir(p); }} className="text-emerald-400 hover:text-emerald-300 bg-emerald-400/10 hover:bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10">
                         Convertir
                       </button>
                     ) : (
-                      <button onClick={() => handleCotizar(p)} className="text-cyan-400 hover:text-cyan-300 bg-cyan-400/10 hover:bg-cyan-400/20 px-3 py-1.5 rounded-lg border border-cyan-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100">
+                      <button onClick={(e) => { e.stopPropagation(); handleCotizar(p); }} className="text-cyan-400 hover:text-cyan-300 bg-cyan-400/10 hover:bg-cyan-400/20 px-3 py-1.5 rounded-lg border border-cyan-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10">
                         <FileText size={16} /> Cotizar
                       </button>
                     )}
-                    <button onClick={() => openEditModal(p)} className="text-blue-400 hover:text-blue-300 bg-blue-400/10 hover:bg-blue-400/20 px-2 py-1.5 rounded-lg border border-blue-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100" title="Editar">
+                    <button onClick={(e) => { e.stopPropagation(); openEditModal(p); }} className="text-blue-400 hover:text-blue-300 bg-blue-400/10 hover:bg-blue-400/20 px-2 py-1.5 rounded-lg border border-blue-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10" title="Editar">
                       <Edit size={16} />
                     </button>
-                    <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-2 py-1.5 rounded-lg border border-red-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100" title="Eliminar">
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }} className="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-2 py-1.5 rounded-lg border border-red-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10" title="Eliminar">
                       <Trash2 size={16} />
                     </button>
                   </div>

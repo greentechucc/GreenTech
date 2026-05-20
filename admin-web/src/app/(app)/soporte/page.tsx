@@ -204,9 +204,9 @@ export default function SoporteAdminPage() {
               const st = statusLabels[t.status] || statusLabels.OPEN;
               const StatusIcon = st.icon;
               return (
-                <tr key={t.id} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors group">
+                <tr key={t.id} onClick={() => router.push(`/soporte/${t.id}`)} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors cursor-pointer group">
                   <td className="p-4">
-                    <span className="text-xs text-slate-500 font-mono">{t.id.slice(0, 8)}...</span>
+                    <span className="text-xs text-slate-500 font-mono group-hover:text-indigo-400 transition-colors">{t.id.slice(0, 8)}...</span>
                   </td>
                   <td className="p-4">
                     <span className="text-sm text-slate-300">{t.customer_email}</span>
@@ -231,15 +231,15 @@ export default function SoporteAdminPage() {
                   <td className="p-4">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => { setSelectedTicket(t); setResponseText(t.resolution || ''); }}
-                        className="text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 hover:bg-indigo-400/20 px-3 py-1.5 rounded-lg border border-indigo-400/30 transition-all flex items-center gap-1.5 text-sm font-medium opacity-0 group-hover:opacity-100"
+                        onClick={(e) => { e.stopPropagation(); setSelectedTicket(t); setResponseText(t.resolution || ''); }}
+                        className="text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 hover:bg-indigo-400/20 px-3 py-1.5 rounded-lg border border-indigo-400/30 transition-all flex items-center gap-1.5 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10"
                       >
                         <MessageSquare size={14} /> Ver
                       </button>
                       {t.status !== 'CLOSED' && (
                         <button
-                          onClick={() => handleClose(t.id)}
-                          className="text-emerald-400 hover:text-emerald-300 bg-emerald-400/10 hover:bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30 transition-all flex items-center gap-1.5 text-sm font-medium opacity-0 group-hover:opacity-100"
+                          onClick={(e) => { e.stopPropagation(); handleClose(t.id); }}
+                          className="text-emerald-400 hover:text-emerald-300 bg-emerald-400/10 hover:bg-emerald-400/20 px-3 py-1.5 rounded-lg border border-emerald-400/30 transition-all flex items-center gap-1.5 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10"
                         >
                           <CheckCircle size={14} /> Cerrar
                         </button>

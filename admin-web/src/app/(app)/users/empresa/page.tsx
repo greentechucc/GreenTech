@@ -22,8 +22,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<{ name: string; email: string; password: string; role: UserRole; active: boolean }>({
-    name: '', email: '', password: '', role: 'Asesor', active: true,
+  const [form, setForm] = useState<{ name: string; email: string; password: string; role: UserRole; active: boolean; crew_name?: string }>({
+    name: '', email: '', password: '', role: 'Asesor', active: true, crew_name: ''
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -60,14 +60,14 @@ export default function UsersPage() {
 
   const openCreateModal = () => {
     setEditingId(null);
-    setForm({ name: '', email: '', password: '', role: 'Asesor', active: true });
+    setForm({ name: '', email: '', password: '', role: 'Asesor', active: true, crew_name: '' });
     setError('');
     setShowModal(true);
   };
 
   const openEditModal = (u: AppUser) => {
     setEditingId(u.id);
-    setForm({ name: u.name, email: u.email, password: '', role: u.role, active: u.active });
+    setForm({ name: u.name, email: u.email, password: '', role: u.role, active: u.active, crew_name: u.crew_name || '' });
     setError('');
     setShowModal(true);
   };
@@ -100,6 +100,7 @@ export default function UsersPage() {
             email: form.email,
             role: form.role,
             active: form.active,
+            crew_name: form.crew_name,
             ...(form.password ? { password: form.password } : {}),
           };
         }
@@ -114,6 +115,7 @@ export default function UsersPage() {
         password: form.password,
         role: form.role,
         active: form.active,
+        crew_name: form.crew_name,
       });
     }
 
@@ -274,13 +276,13 @@ export default function UsersPage() {
               </tr>
             )}
             {filteredUsers.map(u => (
-              <tr key={u.id} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors group">
+              <tr key={u.id} onClick={() => router.push(`/users/empresa/${u.id}`)} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors cursor-pointer group">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
                       {u.name.charAt(0).toUpperCase()}
                     </div>
-                    <span className="font-medium">{u.name}</span>
+                    <span className="font-medium group-hover:text-emerald-400 transition-colors">{u.name}</span>
                   </div>
                 </td>
                 <td className="p-4">
@@ -295,9 +297,9 @@ export default function UsersPage() {
                 </td>
                 <td className="p-4">
                   <button
-                    onClick={() => toggleActive(u.id)}
+                    onClick={(e) => { e.stopPropagation(); toggleActive(u.id); }}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all",
+                      "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all relative z-10",
                       u.active
                         ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/30 hover:bg-emerald-400/20'
                         : 'text-rose-400 bg-rose-400/10 border-rose-400/30 hover:bg-rose-400/20'
@@ -311,15 +313,15 @@ export default function UsersPage() {
                 <td className="p-4">
                   <div className="flex gap-2">
                     <button
-                      onClick={() => openEditModal(u)}
-                      className="text-blue-400 hover:text-blue-300 bg-blue-400/10 hover:bg-blue-400/20 px-3 py-1.5 rounded-lg border border-blue-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100"
+                      onClick={(e) => { e.stopPropagation(); openEditModal(u); }}
+                      className="text-blue-400 hover:text-blue-300 bg-blue-400/10 hover:bg-blue-400/20 px-3 py-1.5 rounded-lg border border-blue-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10"
                       title="Editar"
                     >
                       <Edit size={16} /> Editar
                     </button>
                     <button
-                      onClick={() => handleDelete(u.id)}
-                      className="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-2 py-1.5 rounded-lg border border-red-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(u.id); }}
+                      className="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 px-2 py-1.5 rounded-lg border border-red-400/30 transition-all flex items-center gap-2 text-sm font-medium opacity-0 group-hover:opacity-100 relative z-10"
                       title="Eliminar"
                     >
                       <Trash2 size={16} />
@@ -400,6 +402,24 @@ export default function UsersPage() {
               ))}
             </div>
           </div>
+
+          {(form.role === 'Tecnico' || form.role === 'Auxiliar') && (
+            <div className="mt-4 p-4 border border-teal-500/30 bg-teal-500/5 rounded-xl">
+              <label className="block text-sm text-teal-400 mb-2 font-medium">Asignación Logística (Cuadrilla)</label>
+              <select 
+                value={(form as any).crew_name || ''} 
+                onChange={e => setForm({ ...form, crew_name: e.target.value } as any)} 
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-teal-500 transition-all"
+              >
+                <option value="">Ninguna / Automática</option>
+                <option value="Cuadrilla Alfa (Norte)">Cuadrilla Alfa (Norte)</option>
+                <option value="Cuadrilla Beta (Sur)">Cuadrilla Beta (Sur)</option>
+                <option value="Cuadrilla Omega (Centro)">Cuadrilla Omega (Centro)</option>
+                <option value="Subcontratista Energía Global">Subcontratista Energía Global</option>
+              </select>
+              <p className="text-xs text-slate-500 mt-2">Crucial para que este empleado pueda ver y operar sobre los proyectos específicos de su escuadrón.</p>
+            </div>
+          )}
           {editingId && (
             <div className="flex items-center gap-3">
               <label className="text-sm text-slate-400">Estado:</label>

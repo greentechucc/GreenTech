@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { Search, Plus, Filter, Package, AlertTriangle, Box, RefreshCw, Edit, Trash2, X, DollarSign } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import { Modal } from '@/components/ui/Modal';
 
@@ -10,6 +11,7 @@ const formatCOP = (value: number) => {
 };
 
 export default function InventoryPage() {
+  const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
@@ -248,15 +250,15 @@ export default function InventoryPage() {
               </td></tr>
             )}
             {filteredItems.map((i: any) => (
-              <tr key={i.id} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors group">
-                <td className="p-4 font-medium">{i.name}</td>
+              <tr key={i.id} onClick={() => router.push(`/inventory/${i.id}`)} className="border-b border-border/50 hover:bg-slate-800/30 transition-colors cursor-pointer group">
+                <td className="p-4 font-medium group-hover:text-emerald-400 transition-colors">{i.name}</td>
                 <td className="p-4 font-mono text-sm text-cyan-400">{i.sku}</td>
                 <td className="p-4">
                   <span className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-300">{i.category}</span>
                 </td>
                 <td className="p-4">
                   <div className="flex items-center gap-2">
-                    <span className={`font-semibold text-lg ${i.stock <= i.min_stock ? 'text-amber-400' : 'text-white'}`}>{i.stock}</span>
+                    <span className={`font-semibold text-lg ${i.stock <= i.min_stock ? 'text-amber-400' : 'text-slate-200'}`}>{i.stock}</span>
                     <span className="text-slate-500 text-sm">{i.unit}</span>
                     {i.stock <= i.min_stock && (
                       <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full text-xs font-semibold flex items-center gap-1"><AlertTriangle size={10}/> BAJO</span>
@@ -274,21 +276,22 @@ export default function InventoryPage() {
                   </span>
                 </td>
                 <td className="p-4">
-                  <div className="flex items-center gap-1.5">
-                    <button onClick={() => { setSelectedItem(i); setShowStockModal(true); }} className="text-slate-400 hover:text-cyan-400 bg-slate-800 hover:bg-slate-700 p-2 rounded-lg border border-slate-700 transition-all" title="Ajustar Stock">
+                  <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedItem(i); setShowStockModal(true); }} className="text-slate-400 hover:text-cyan-400 bg-slate-800 hover:bg-slate-700 p-2 rounded-lg border border-slate-700 transition-all z-10 relative" title="Ajustar Stock">
                       <RefreshCw size={14} />
                     </button>
-                    <button onClick={() => {
+                    <button onClick={(e) => {
+                        e.stopPropagation();
                         setForm({
                             id: i.id, sku: i.sku, name: i.name, category: i.category,
                             stock: String(i.stock), min_stock: String(i.min_stock),
                             unit: i.unit, unit_price: String(i.unit_price), status: i.status || 'AVAILABLE'
                         });
                         setShowModal(true);
-                    }} className="text-slate-400 hover:text-blue-400 bg-slate-800 hover:bg-slate-700 p-2 rounded-lg border border-slate-700 transition-all" title="Editar">
+                    }} className="text-slate-400 hover:text-blue-400 bg-slate-800 hover:bg-slate-700 p-2 rounded-lg border border-slate-700 transition-all z-10 relative" title="Editar">
                         <Edit size={14} />
                     </button>
-                    <button onClick={() => handleDelete(i.id)} className="text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700 p-2 rounded-lg border border-slate-700 transition-all" title="Eliminar">
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(i.id); }} className="text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700 p-2 rounded-lg border border-slate-700 transition-all z-10 relative" title="Eliminar">
                         <Trash2 size={14} />
                     </button>
                   </div>

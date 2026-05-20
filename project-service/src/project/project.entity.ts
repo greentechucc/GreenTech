@@ -42,6 +42,9 @@ export class Project {
   @Column({ type: 'text', nullable: true })
   bom_json: string;
 
+  @Column("simple-array", { nullable: true })
+  assigned_auxiliaries: string[];
+
   @CreateDateColumn()
   created_at: Date;
 }

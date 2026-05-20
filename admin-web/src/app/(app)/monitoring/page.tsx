@@ -1,14 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Plus, Activity, Sun, Wifi, WifiOff, Zap, Thermometer } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Plus, Activity, Sun, Wifi, WifiOff, Zap, Thermometer, AlertTriangle } from 'lucide-react';
 import api from '@/services/api';
 import { Modal } from '@/components/ui/Modal';
+import { getCurrentUser } from '@/lib/mock-users';
 
 export default function MonitoringPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [inverters, setInverters] = useState<any[]>([]);
+  const [allProjects, setAllProjects] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState<{project_id: string, serial_number: string, model: string, status?: string, id?: number}>({ project_id: '', serial_number: '', model: '', status: 'OFFLINE' });
+  const [form, setForm] = useState<{ project_id: string, serial_number: string, model: string, status?: string, id?: number }>({ project_id: '', serial_number: '', model: '', status: 'OFFLINE' });
   const [loading, setLoading] = useState(false);
 
   const fetchData = () => {
@@ -17,26 +23,59 @@ export default function MonitoringPage() {
       .catch(() => setInverters([]));
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    setCurrentUser(getCurrentUser());
+    api.get('/projects/projects').then(res => setAllProjects(res.data)).catch(() => {});
+    fetchData();
+    const pid = searchParams.get('projectId');
+    if (pid) {
+      setForm(prev => ({ ...prev, project_id: pid }));
+      setShowModal(true);
+      
+      // Auto-fill from project BOM for better UX
+      api.get(`/projects/projects/${pid}`).then(res => {
+         const p = res.data;
+         if (p && p.bom_json) {
+            try {
+               const bomStr = decodeURIComponent(p.bom_json);
+               const finalBom = JSON.parse(bomStr);
+               const inverterItem = finalBom.find((item: any) => item.name.toLowerCase().includes('inver'));
+               if (inverterItem) {
+                  const randomSerial = `SN-${pid}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+                  setForm(prev => ({ ...prev, model: inverterItem.name, serial_number: randomSerial }));
+               } else {
+                  setForm(prev => ({ ...prev, model: 'Inversor On-Grid Estándar 10kW', serial_number: `INV-PRJ${pid}-001` }));
+               }
+            } catch (e) {
+               console.warn("Could not parse BOM to auto-fill", e);
+               // Failsafe
+               setForm(prev => ({ ...prev, model: 'Inversor On-Grid Estándar 10kW', serial_number: `INV-PRJ${pid}-001` }));
+            }
+         } else {
+            setForm(prev => ({ ...prev, model: 'Inversor On-Grid Estándar 10kW', serial_number: `INV-PRJ${pid}-001` }));
+         }
+      }).catch(err => console.log('Error fetching project for autofill', err));
+    }
+  }, [searchParams]);
 
   const handleCreateOrUpdate = async () => {
     if (!form.serial_number || !form.model) return;
     setLoading(true);
     try {
       if (form.id) {
-          await api.put(`/monitoring/monitoring/inverters/${form.id}`, {
-            project_id: Number(form.project_id) || 0,
-            serial_number: form.serial_number,
-            model: form.model,
-            status: form.status
-          });
+        await api.put(`/monitoring/monitoring/inverters/${form.id}`, {
+          project_id: Number(form.project_id) || 0,
+          serial_number: form.serial_number,
+          model: form.model,
+          status: form.status
+        });
       } else {
-          await api.post('/monitoring/monitoring/inverters', {
-            project_id: Number(form.project_id) || 0,
-            serial_number: form.serial_number,
-            model: form.model,
-            status: 'OFFLINE'
-          });
+        await api.post('/monitoring/monitoring/inverters', {
+          project_id: Number(form.project_id) || 0,
+          serial_number: form.serial_number,
+          model: form.model,
+          status: 'OFFLINE'
+        });
       }
       setForm({ project_id: '', serial_number: '', model: '', status: 'OFFLINE' });
       setShowModal(false);
@@ -49,15 +88,29 @@ export default function MonitoringPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if(!confirm("¿Está seguro de eliminar este inversor?")) return;
+    if (!confirm("¿Está seguro de eliminar este inversor?")) return;
     try {
-        await api.delete(`/monitoring/monitoring/inverters/${id}`);
-        fetchData();
-    } catch(e) { console.error(e) }
+      await api.delete(`/monitoring/monitoring/inverters/${id}`);
+      fetchData();
+    } catch (e) { console.error(e) }
   };
 
+  const filteredInverters = useMemo(() => {
+    let result = inverters;
+    if ((currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar') && allProjects.length > 0) {
+      if (currentUser?.role === 'Tecnico' && currentUser.crew_name) {
+        const myProjectIds = allProjects.filter(p => p.assigned_crew === currentUser.crew_name).map(p => p.id);
+        result = result.filter(inv => myProjectIds.includes(inv.project_id));
+      } else if (currentUser?.role === 'Auxiliar') {
+        const myProjectIds = allProjects.filter(p => p.assigned_auxiliaries?.includes(currentUser.email)).map(p => p.id);
+        result = result.filter(inv => myProjectIds.includes(inv.project_id));
+      }
+    }
+    return result;
+  }, [inverters, currentUser, allProjects]);
 
-  const online = inverters.filter((i: any) => i.last_communication && (Date.now() - new Date(i.last_communication).getTime()) < 3600000).length;
+  const onlineCount = filteredInverters.filter((i: any) => i.status === 'ONLINE').length;
+  const errorCount = filteredInverters.filter((i: any) => i.status === 'ERROR').length;
 
   return (
     <div className="space-y-6 fade-in p-4">
@@ -77,79 +130,70 @@ export default function MonitoringPage() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-slate-400 text-sm font-medium">Inversores Registrados</p>
-              <h3 className="text-2xl font-bold mt-1">{inverters.length}</h3>
+              <h3 className="text-2xl font-bold mt-1">{filteredInverters.length}</h3>
             </div>
-            <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400"><Zap size={22}/></div>
+            <div className="p-3 bg-amber-500/20 rounded-xl text-amber-400"><Zap size={22} /></div>
           </div>
         </div>
         <div className="glass p-5 hover:-translate-y-1 transition-transform">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-slate-400 text-sm font-medium">Con Comunicación Reciente</p>
-              <h3 className="text-2xl font-bold mt-1 text-emerald-400">{online}</h3>
+              <p className="text-slate-400 text-sm font-medium">Con Comunicación</p>
+              <h3 className="text-2xl font-bold mt-1 text-emerald-400">{onlineCount}</h3>
             </div>
-            <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-400"><Wifi size={22}/></div>
+            <div className="p-3 bg-emerald-500/20 rounded-xl text-emerald-400"><Wifi size={22} /></div>
           </div>
         </div>
         <div className="glass p-5 hover:-translate-y-1 transition-transform">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-slate-400 text-sm font-medium">Sin Comunicación</p>
-              <h3 className={`text-2xl font-bold mt-1 ${inverters.length - online > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{inverters.length - online}</h3>
+              <p className="text-slate-400 text-sm font-medium">Sin Comunicación (Error)</p>
+              <h3 className={`text-2xl font-bold mt-1 ${errorCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{errorCount}</h3>
             </div>
-            <div className="p-3 bg-rose-500/20 rounded-xl text-rose-400"><Activity size={22}/></div>
+            <div className="p-3 bg-rose-500/20 rounded-xl text-rose-400"><Activity size={22} /></div>
           </div>
         </div>
       </div>
 
       {/* Inverter Cards */}
-      {inverters.length === 0 && (
-        <div className="glass p-12 text-center text-slate-500">No hay inversores registrados. Registra el primero.</div>
+      {filteredInverters.length === 0 && (
+        <div className="glass p-12 text-center text-slate-500">No hay inversores registrados o asignados a su cuadrilla.</div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {inverters.map((inv: any) => {
+        {filteredInverters.map((inv: any) => {
           const hasComm = inv.last_communication && (Date.now() - new Date(inv.last_communication).getTime()) < 3600000;
           return (
-            <div key={inv.id} className="glass p-5 hover:-translate-y-1 transition-transform">
+            <div key={inv.id} onClick={() => router.push(`/monitoring/${inv.id}`)} className="glass p-5 hover:-translate-y-1 transition-transform cursor-pointer relative group">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h4 className="font-bold text-lg">{inv.model}</h4>
+                  <h4 className="font-bold text-lg group-hover:text-emerald-400 transition-colors">{inv.model}</h4>
                   <p className="text-slate-400 text-sm">S/N: {inv.serial_number} — Proyecto #{inv.project_id}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                      inv.status === 'ONLINE' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' :
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${inv.status === 'ONLINE' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' :
                       inv.status === 'OFFLINE' ? 'text-slate-400 bg-slate-500/10 border-slate-500/30' :
-                      inv.status === 'MAINTENANCE' ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' :
-                      inv.status === 'ERROR' ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' :
-                      'text-slate-400 bg-slate-500/10 border-slate-500/30'
+                        inv.status === 'MAINTENANCE' ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' :
+                          inv.status === 'ERROR' ? 'text-rose-400 bg-rose-500/10 border-rose-500/30' :
+                            'text-slate-400 bg-slate-500/10 border-slate-500/30'
                     }`}>
-                      {(inv.status === 'ONLINE' || inv.status === 'OFFLINE') ? (
-                         inv.status === 'ONLINE' ? <Wifi size={12} className="inline mr-1" /> : <WifiOff size={12} className="inline mr-1" />
-                      ) : (
-                         <Activity size={12} className="inline mr-1" />
-                      )}
-                      {inv.status || 'OFFLINE'}
-                    </span>
-                    <button onClick={async () => {
-                        try {
-                           const res = await api.get(`/monitoring/monitoring/savings/project/${inv.project_id}`);
-                           const data = res.data;
-                           alert(`Ahorro (Últimas 24h):\n\nGeneración: ${data.saved_kwh.toFixed(2)} kWh\nTarifa Comercial Promedio: $${data.tarifa_promedio} COP\n\nTotal Ahorrado: $${data.savings_cop.toLocaleString('en-US')} COP`);
-                        } catch(e) { console.error('Error fetching savings', e); alert('Error al obtener ahorros.'); }
-                    }} className="text-emerald-400 hover:text-emerald-300 bg-emerald-400/10 hover:bg-emerald-400/20 p-1.5 rounded border border-emerald-400/30 transition-all text-xs" title="Ver ahorros en COP">
-                        <Thermometer size={14} className="inline mr-1"/> Ahorro
-                    </button>
-                    <button onClick={() => {
-                        setForm({ project_id: String(inv.project_id || ''), serial_number: inv.serial_number, model: inv.model, status: inv.status, id: inv.id });
-                        setShowModal(true);
-                    }} className="text-slate-400 hover:text-emerald-400 bg-slate-800 hover:bg-slate-700 p-1.5 rounded border border-slate-700 transition-all text-xs">
-                        Editar
-                    </button>
-                    <button onClick={() => handleDelete(inv.id)} className="text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700 p-1.5 rounded border border-slate-700 transition-all text-xs">
-                        X
-                    </button>
+                    {(inv.status === 'ONLINE' || inv.status === 'OFFLINE') ? (
+                      inv.status === 'ONLINE' ? <Wifi size={12} className="inline mr-1" /> : <WifiOff size={12} className="inline mr-1" />
+                    ) : (
+                      <Activity size={12} className="inline mr-1" />
+                    )}
+                    {inv.status || 'OFFLINE'}
+                  </span>
+                  <button onClick={(e) => {
+                    e.stopPropagation();
+                    setForm({ project_id: String(inv.project_id || ''), serial_number: inv.serial_number, model: inv.model, status: inv.status, id: inv.id });
+                    setShowModal(true);
+                  }} className="text-slate-400 hover:text-emerald-400 bg-slate-800 hover:bg-slate-700 p-1.5 rounded border border-slate-700 transition-all text-xs z-10 relative">
+                    Editar
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(inv.id); }} className="text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700 p-1.5 rounded border border-slate-700 transition-all text-xs z-10 relative">
+                    X
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -157,9 +201,11 @@ export default function MonitoringPage() {
                   <p className="text-xs text-slate-400 mb-1">Instalación</p>
                   <p className="font-bold text-sm text-slate-200">{inv.installation_date ? new Date(inv.installation_date).toLocaleDateString() : '—'}</p>
                 </div>
-                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                  <p className="text-xs text-slate-400 mb-1">Última Comunicación</p>
-                  <p className="font-bold text-sm text-slate-200">{inv.last_communication ? new Date(inv.last_communication).toLocaleString('en-US') : 'Sin datos'}</p>
+                <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 flex flex-col items-center justify-center">
+                  {(inv.status === 'ONLINE') && <Wifi size={24} className="text-emerald-400" />}
+                  {(inv.status === 'OFFLINE') && <WifiOff size={24} className="text-slate-400" />}
+                  {(inv.status === 'ERROR') && <AlertTriangle size={24} className="text-rose-400 animate-pulse" />}
+                  {(inv.status === 'MAINTENANCE') && <Activity size={24} className="text-amber-400" />}
                 </div>
               </div>
             </div>
@@ -171,33 +217,26 @@ export default function MonitoringPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-slate-400 mb-1">ID del Proyecto</label>
-            <input type="number" value={form.project_id} onChange={e => setForm({...form, project_id: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="Ej: 1" />
+            <input type="number" value={form.project_id} onChange={e => setForm({ ...form, project_id: e.target.value })} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="Ej: 1" />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Número de Serie *</label>
-            <input value={form.serial_number} onChange={e => setForm({...form, serial_number: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="Ej: INV-HYB-10K-00123" />
+            <input value={form.serial_number} onChange={e => setForm({ ...form, serial_number: e.target.value })} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="Ej: INV-HYB-10K-00123" />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Modelo *</label>
-            <select value={form.model} onChange={e => setForm({...form, model: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all">
-              <option value="">Seleccionar...</option>
-              <option value="Inversor Híbrido 10kW">Inversor Híbrido 10kW</option>
-              <option value="Inversor On-Grid 5kW">Inversor On-Grid 5kW</option>
-              <option value="Inversor On-Grid 10kW">Inversor On-Grid 10kW</option>
-              <option value="Inversor String 15kW">Inversor String 15kW</option>
-              <option value="Micro-Inversor 800W">Micro-Inversor 800W</option>
-            </select>
+            <input value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="Ej: Inversor Híbrido 10kW" />
           </div>
           {form.id && (
-          <div>
-            <label className="block text-sm text-slate-400 mb-1">Estado</label>
-            <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all">
+            <div>
+              <label className="block text-sm text-slate-400 mb-1">Estado</label>
+              <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all">
                 <option value="ONLINE">ONLINE</option>
                 <option value="OFFLINE">OFFLINE</option>
                 <option value="MAINTENANCE">MAINTENANCE</option>
                 <option value="ERROR">ERROR</option>
-            </select>
-          </div>
+              </select>
+            </div>
           )}
           <button onClick={handleCreateOrUpdate} disabled={loading || !form.serial_number || !form.model} className="w-full bg-primary hover:bg-primary-dark disabled:opacity-50 text-white font-medium py-3 rounded-xl transition-all mt-2">
             {loading ? 'Guardando...' : 'Registrar Inversor'}

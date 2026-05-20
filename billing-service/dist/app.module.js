@@ -15,6 +15,7 @@ const app_service_1 = require("./app.service");
 const billing_module_1 = require("./billing/billing.module");
 const audit_log_entity_1 = require("./common/entities/audit-log.entity");
 const audit_interceptor_1 = require("./common/interceptors/audit.interceptor");
+const metrics_module_1 = require("./metrics/metrics.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -33,6 +34,7 @@ exports.AppModule = AppModule = __decorate([
                 entities: [audit_log_entity_1.AuditLog],
             }),
             billing_module_1.BillingModule,
+            metrics_module_1.MetricsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [

@@ -5,19 +5,22 @@ import { Search, Plus, Filter, PenTool, CheckCircle, Clock, DollarSign, FileText
 import { useRouter } from 'next/navigation';
 import api from '@/services/api';
 import { Modal } from '@/components/ui/Modal';
+import { getCurrentUser, getUsers } from '@/lib/mock-users';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [alertMsg, setAlertMsg] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<{project_name: string, customer_name: string, customer_email: string, system_size: string, estimated_amount: string, status: string, completion: number, assigned_crew: string, planned_start_date: string, planned_end_date: string, bom_json: string}>({ 
-    project_name: '', customer_name: '', customer_email: '', system_size: '', estimated_amount: '', status: 'CREATED', completion: 0, assigned_crew: '', planned_start_date: '', planned_end_date: '', bom_json: '' 
+  const [form, setForm] = useState<{project_name: string, customer_name: string, customer_email: string, system_size: string, estimated_amount: string, status: string, completion: number, assigned_crew: string, assigned_auxiliaries: string[], planned_start_date: string, planned_end_date: string, bom_json: string}>({ 
+    project_name: '', customer_name: '', customer_email: '', system_size: '', estimated_amount: '', status: 'CREATED', completion: 0, assigned_crew: '', assigned_auxiliaries: [], planned_start_date: '', planned_end_date: '', bom_json: '' 
   });
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [availableAuxiliares, setAvailableAuxiliares] = useState<any[]>([]);
   const router = useRouter();
 
   const fetchData = () => {
@@ -27,6 +30,15 @@ export default function ProjectsPage() {
   };
 
   useEffect(() => { 
+    const cu = getCurrentUser();
+    setCurrentUser(cu);
+    
+    if (cu?.role === 'Tecnico' && cu.crew_name) {
+       const allUsers = getUsers();
+       const myAux = allUsers.filter(u => u.role === 'Auxiliar' && u.crew_name === cu.crew_name);
+       setAvailableAuxiliares(myAux);
+    }
+
     fetchData(); 
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -36,7 +48,7 @@ export default function ProjectsPage() {
       const amount = params.get('estimated_amount');
       const bom = params.get('bom');
       if (customer) {
-        setForm({ project_name: '', customer_name: customer, customer_email: email || '', system_size: size || '', estimated_amount: amount || '', status: 'CREATED', completion: 0, assigned_crew: '', planned_start_date: '', planned_end_date: '', bom_json: bom || '' });
+        setForm({ project_name: '', customer_name: customer, customer_email: email || '', system_size: size || '', estimated_amount: amount || '', status: 'CREATED', completion: 0, assigned_crew: '', assigned_auxiliaries: [], planned_start_date: '', planned_end_date: '', bom_json: bom || '' });
         setShowModal(true);
         // Limpiar para evitar duplicados al recargar
         window.history.replaceState({}, '', '/projects');
@@ -54,6 +66,17 @@ export default function ProjectsPage() {
 
   const filteredProjects = useMemo(() => {
     let result = projects;
+    
+    if (currentUser?.role === 'Tecnico') {
+      if (currentUser.crew_name) {
+        result = result.filter(p => p.assigned_crew === currentUser.crew_name);
+      }
+    }
+
+    if (currentUser?.role === 'Auxiliar') {
+      result = result.filter(p => p.assigned_auxiliaries?.includes(currentUser.email));
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(p =>
@@ -92,6 +115,7 @@ export default function ProjectsPage() {
       status: p.status || 'CREATED',
       completion: p.completion || 0,
       assigned_crew: p.assigned_crew || '',
+      assigned_auxiliaries: p.assigned_auxiliaries || [],
       planned_start_date: p.planned_start_date ? new Date(p.planned_start_date).toISOString().split('T')[0] : '',
       planned_end_date: p.planned_end_date ? new Date(p.planned_end_date).toISOString().split('T')[0] : '',
       bom_json: p.bom_json || ''
@@ -158,7 +182,7 @@ export default function ProjectsPage() {
       } else {
         await api.post('/projects/projects', data);
       }
-      setForm({ project_name: '', customer_name: '', customer_email: '', system_size: '', estimated_amount: '', status: 'CREATED', completion: 0, assigned_crew: '', planned_start_date: '', planned_end_date: '', bom_json: '' });
+      setForm({ project_name: '', customer_name: '', customer_email: '', system_size: '', estimated_amount: '', status: 'CREATED', completion: 0, assigned_crew: '', assigned_auxiliaries: [], planned_start_date: '', planned_end_date: '', bom_json: '' });
       setEditingId(null);
       setShowModal(false);
       if (typeof window !== 'undefined') {
@@ -190,7 +214,7 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-light tracking-tight">Proyectos e Instalaciones</h1>
           <p className="text-slate-400">Orquestación de cuadrillas y etapas de ejecución</p>
         </div>
-        <button onClick={() => { setEditingId(null); setForm({ project_name: '', customer_name: '', customer_email: '', system_size: '', estimated_amount: '', status: 'CREATED', completion: 0, assigned_crew: '', planned_start_date: '', planned_end_date: '', bom_json: '' }); setShowModal(true); }} className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all">
+        <button onClick={() => { setEditingId(null); setForm({ project_name: '', customer_name: '', customer_email: '', system_size: '', estimated_amount: '', status: 'CREATED', completion: 0, assigned_crew: '', assigned_auxiliaries: [], planned_start_date: '', planned_end_date: '', bom_json: '' }); setShowModal(true); }} className="bg-primary hover:bg-primary-dark text-white font-medium py-2 px-4 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all">
           <Plus size={20} /> Nuevo Proyecto
         </button>
       </header>
@@ -342,14 +366,45 @@ export default function ProjectsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block text-sm text-slate-400 mb-1">Cuadrilla Asignada</label>
-                <select value={form.assigned_crew} onChange={e => setForm({...form, assigned_crew: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all">
-                  <option value="">Seleccionar cuadrilla...</option>
-                  <option value="Cuadrilla Alfa (Norte)">Cuadrilla Alfa (Norte)</option>
-                  <option value="Cuadrilla Beta (Sur)">Cuadrilla Beta (Sur)</option>
-                  <option value="Cuadrilla Omega (Centro)">Cuadrilla Omega (Centro)</option>
-                  <option value="Subcontratista Energía Global">Subcontratista Energía Global</option>
-                </select>
+                {currentUser?.role === 'Tecnico' ? (
+                  <div className="w-full bg-slate-900/70 border border-slate-600 rounded-xl py-2 px-4 text-slate-300 cursor-not-allowed opacity-80">
+                    {form.assigned_crew || 'No asignada'}
+                    <span className="text-xs text-slate-500 ml-2">(solo lectura)</span>
+                  </div>
+                ) : (
+                  <select value={form.assigned_crew} onChange={e => setForm({...form, assigned_crew: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all">
+                    <option value="">Seleccionar cuadrilla...</option>
+                    <option value="Cuadrilla Alfa (Norte)">Cuadrilla Alfa (Norte)</option>
+                    <option value="Cuadrilla Beta (Sur)">Cuadrilla Beta (Sur)</option>
+                    <option value="Cuadrilla Omega (Centro)">Cuadrilla Omega (Centro)</option>
+                    <option value="Subcontratista Energía Global">Subcontratista Energía Global</option>
+                  </select>
+                )}
               </div>
+
+              {/* Assignment logic for available Auxiliaries */}
+              {availableAuxiliares.length > 0 && (
+                 <div className="col-span-2 mb-2 p-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    <label className="block text-sm text-slate-300 font-medium mb-2">Delegar a Auxiliares de tu Cuadrilla</label>
+                    <div className="flex flex-wrap gap-2">
+                       {availableAuxiliares.map(aux => (
+                         <label key={aux.email} className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-600 hover:border-emerald-500 cursor-pointer text-sm">
+                           <input 
+                             type="checkbox" 
+                             className="accent-emerald-500"
+                             checked={form.assigned_auxiliaries.includes(aux.email)}
+                             onChange={(e) => {
+                               if (e.target.checked) setForm(prev => ({...prev, assigned_auxiliaries: [...prev.assigned_auxiliaries, aux.email]}));
+                               else setForm(prev => ({...prev, assigned_auxiliaries: prev.assigned_auxiliaries.filter(a => a !== aux.email)}));
+                             }}
+                            />
+                           {aux.name}
+                         </label>
+                       ))}
+                    </div>
+                 </div>
+              )}
+
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Fecha Inicio Planeada</label>
                 <input type="date" value={form.planned_start_date} onChange={e => setForm({...form, planned_start_date: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" />

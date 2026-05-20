@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, Circle, Clock, DollarSign, FileText, Users, MapPin, Calendar, Cpu, Edit, Briefcase, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, Clock, DollarSign, FileText, Users, MapPin, Calendar, Cpu, Edit, Briefcase, X, Activity } from 'lucide-react';
 import api from '@/services/api';
+import { getCurrentUser, type AppUser } from '@/lib/mock-users';
 
 interface ProjectTask {
   id: number;
@@ -19,10 +20,12 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [alertMsg, setAlertMsg] = useState('');
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
   const projectId = params.id as string;
 
   useEffect(() => {
+    setCurrentUser(getCurrentUser());
     fetchProject();
   }, [projectId]);
 
@@ -140,6 +143,52 @@ export default function ProjectDetailPage() {
       </div>
     );
   }
+  const handleBillingClick = async () => {
+    try {
+      const res = await api.get('/billing/billing/invoices');
+      const facturas = Array.isArray(res.data) ? res.data : [];
+      const hasInvoices = facturas.some((inv: any) => String(inv.project_id) === String(project.id) || String(inv.projectId) === String(project.id));
+      if (hasInvoices) {
+        router.push(`/billing/${project.id}`);
+      } else {
+        const cName = encodeURIComponent(project.customer_name || '');
+        router.push(`/billing?customer_name=${cName}&projectId=${project.id || ''}&amount=${project.estimated_amount || ''}`);
+      }
+    } catch {
+      const cName = encodeURIComponent(project.customer_name || '');
+      router.push(`/billing?customer_name=${cName}&projectId=${project.id || ''}&amount=${project.estimated_amount || ''}`);
+    }
+  };
+
+  const handlePermitsClick = async () => {
+    try {
+      const res = await api.get('/permits/permits');
+      const tramites = Array.isArray(res.data) ? res.data : [];
+      const permit = tramites.find((p: any) => String(p.project_id) === String(project.id) || String(p.projectId) === String(project.id));
+      if (permit) {
+        router.push(`/permits/${permit.id}`);
+      } else {
+        router.push(`/permits?projectId=${project.id || ''}`);
+      }
+    } catch {
+      router.push(`/permits?projectId=${project.id || ''}`);
+    }
+  };
+
+  const handleMonitoringClick = async () => {
+    try {
+      const res = await api.get('/monitoring/monitoring/inverters');
+      const inverters = Array.isArray(res.data) ? res.data : [];
+      const inverter = inverters.find((i: any) => String(i.project_id) === String(project.id) || String(i.projectId) === String(project.id));
+      if (inverter) {
+        router.push(`/monitoring/${inverter.id}`);
+      } else {
+        router.push(`/monitoring?projectId=${project.id || ''}`);
+      }
+    } catch {
+      router.push(`/monitoring?projectId=${project.id || ''}`);
+    }
+  };
 
   return (
     <div className="fade-in p-4 h-[calc(100vh-4rem)] flex flex-col overflow-y-auto">
@@ -160,18 +209,30 @@ export default function ProjectDetailPage() {
             <span className={`px-4 py-1.5 rounded-full text-xs font-bold border uppercase tracking-wider ${statusStyles[project.status] || statusStyles.CREATED}`}>
               {project.status?.replace(/_/g, ' ')}
             </span>
-            <button
-              onClick={() => router.push(`/billing?customer_name=${encodeURIComponent(project.customer_name)}&projectId=${project.id}&amount=${project.estimated_amount || ''}`)}
-              className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 px-4 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-2 text-sm font-medium transition-all"
-            >
-              <DollarSign size={16} /> Facturar
-            </button>
-            <button
-              onClick={() => router.push(`/permits?projectId=${project.id}`)}
-              className="bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 px-4 py-2 rounded-xl border border-violet-500/30 flex items-center gap-2 text-sm font-medium transition-all"
-            >
-              <FileText size={16} /> Trámites
-            </button>
+            {currentUser?.role !== 'Auxiliar' && currentUser?.role !== 'Tecnico' && currentUser?.role !== 'Proyectos' && (
+              <button
+                onClick={handleBillingClick}
+                className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 px-4 py-2 rounded-xl border border-cyan-500/30 flex items-center gap-2 text-sm font-medium transition-all"
+              >
+                <DollarSign size={16} /> Facturar
+              </button>
+            )}
+            {currentUser?.role !== 'Auxiliar' && currentUser?.role !== 'Tecnico' && currentUser?.role !== 'Facturas' && (
+              <button
+                onClick={handlePermitsClick}
+                className="bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 px-4 py-2 rounded-xl border border-violet-500/30 flex items-center gap-2 text-sm font-medium transition-all"
+              >
+                <FileText size={16} /> Trámites
+              </button>
+            )}
+            {currentUser?.role !== 'Facturas' && currentUser?.role !== 'Proyectos' && (
+              <button
+                onClick={handleMonitoringClick}
+                className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 px-4 py-2 rounded-xl border border-emerald-500/30 flex items-center gap-2 text-sm font-medium transition-all"
+              >
+                <Activity size={16} /> Monitoreo
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -285,7 +346,7 @@ export default function ProjectDetailPage() {
                   <button
                     key={task.id}
                     onClick={() => toggleTask(task.id)}
-                    disabled={saving}
+                    disabled={saving || currentUser?.role === 'Facturas'}
                     className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left group ${
                       task.done
                         ? 'bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10'

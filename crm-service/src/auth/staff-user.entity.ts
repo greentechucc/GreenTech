@@ -20,6 +20,9 @@ export class StaffUser {
   @Column({ default: true })
   active: boolean;
 
+  @Column({ nullable: true })
+  crew_name: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

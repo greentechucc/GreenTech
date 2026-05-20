@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, AlertCircle } from 'lucide-react';
-import { authenticateUser, setCurrentUser } from '@/lib/mock-users';
+import { authenticateUser, setCurrentUser, getUsers } from '@/lib/mock-users';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -34,6 +34,12 @@ export default function LoginPage() {
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem('greentech_token', data.access_token);
+        // Enrich with crew_name from local defaults if backend doesn't return it
+        const localUsers = getUsers();
+        const localMatch = localUsers.find(u => u.email === data.user.email);
+        if (localMatch?.crew_name && !data.user.crew_name) {
+          data.user.crew_name = localMatch.crew_name;
+        }
         setCurrentUser(data.user);
         router.push('/dashboard');
       } else {
@@ -121,14 +127,16 @@ export default function LoginPage() {
 
         <div className="mt-6 pt-4 border-t border-slate-700/50">
           <p className="text-xs text-slate-500 text-center mb-2">Cuentas de demostración:</p>
-          <div className="grid grid-cols-2 gap-1.5 text-xs text-slate-400">
+          <div className="grid grid-cols-2 gap-x-1.5 gap-y-2 text-xs text-slate-400">
             <span className="text-amber-400/80">Admin:</span><span>admin@greentech.com</span>
             <span className="text-cyan-400/80">Asesor:</span><span>asesor.ventas@greentech.com</span>
             <span className="text-violet-400/80">Proyectos:</span><span>proyectos@greentech.com</span>
             <span className="text-orange-400/80">Bodega:</span><span>bodega@greentech.com</span>
-            <span className="text-emerald-400/80">Técnico:</span><span>tecnico@greentech.com</span>
-            <span className="text-emerald-400/80">Soporte:</span><span>soporte@greentech.com</span>
-            <span className="text-slate-500 col-span-2 text-center mt-1">Contraseña: 12345</span>
+            <span className="text-emerald-400/80">Técnico Norte:</span><span className="truncate" title="tecnicocuadrillanorte@greentech.com">tecnicocuadrillanorte@greentech.com</span>
+            <span className="text-teal-400/80">Aux. Norte:</span><span className="truncate" title="aux1.alfa@greentech.com">aux1.alfa@greentech.com</span>
+            <span className="text-fuchsia-400/80">Facturas:</span><span>facturas@greentech.com</span>
+            <span className="text-indigo-400/80">Soporte:</span><span>soporte@greentech.com</span>
+            <span className="text-slate-500 col-span-2 text-center mt-2 font-mono">Contraseña: 12345</span>
           </div>
         </div>
       </div>

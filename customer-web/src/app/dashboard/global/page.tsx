@@ -4,60 +4,10 @@ import { useState, useEffect } from 'react';
 import { Leaf, Sun, Zap, Award, Factory, Home, CheckCircle2, FactoryIcon, ArrowRight, Globe } from 'lucide-react';
 import api from '@/services/api';
 
-const SHOWCASE_PROJECTS = [
-  {
-    title: 'Planta de Empaque Agrícola',
-    type: 'Industrial',
-    icon: FactoryIcon,
-    size: '120 kWp',
-    panels: 220,
-    co2: '144 Tons/año',
-    image: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?q=80&w=2672&auto=format&fit=crop',
-    description: 'Instalación en cubierta trapezoidal para planta procesadora. Sistema diseñado para suplir el 80% de la demanda diurna de los cuartos fríos.'
-  },
-  {
-    title: 'Edificio Residencial',
-    type: 'Residencial Múltiple',
-    icon: Home,
-    size: '45 kWp',
-    panels: 82,
-    co2: '54 Tons/año',
-    image: 'https://images.unsplash.com/photo-1521618755572-156ae0cdd74d?q=80&w=2676&auto=format&fit=crop',
-    description: 'Sistema interconectado a red para compensar el consumo de áreas comunes y ascensores del complejo.'
-  },
-  {
-    title: 'Centro Comercial',
-    type: 'Comercial',
-    icon: Factory,
-    size: '250 kWp',
-    panels: 460,
-    co2: '300 Tons/año',
-    image: 'https://images.unsplash.com/photo-1613665813446-82a78c468a1d?q=80&w=2658&auto=format&fit=crop',
-    description: 'Mega-instalación con inversores de 50kW para abatir los picos de aire acondicionado de la plaza central.'
-  },
-  {
-    title: 'Finca Cacaotera',
-    type: 'Agroindustrial',
-    icon: Leaf,
-    size: '18 kWp',
-    panels: 34,
-    co2: '21 Tons/año',
-    image: 'https://images.unsplash.com/photo-1592833159057-6cb5d8b74ebd?q=80&w=2670&auto=format&fit=crop',
-    description: 'Instalación Off-Grid con baterías de litio para garantizar el 100% de la energía de la zona de secado y oficinas alejadas de la ciudad.'
-  },
-  {
-    title: 'Campus Universitario Sector Norte',
-    type: 'Institucional',
-    icon: Award,
-    size: '300 kWp',
-    panels: 550,
-    co2: '360 Tons/año',
-    image: 'https://images.unsplash.com/photo-1511649475669-e288648b2339?q=80&w=2689&auto=format&fit=crop',
-    description: 'Cubierta solar en las facultades de ingenierías, sirviendo como laboratorio activo para estudiantes de energía renovable.'
-  }
-];
+import { useRouter, useSearchParams } from 'next/navigation';
+import { SHOWCASE_PROJECTS } from './mockData';
 
-export default function GlobalPage() {
+function GlobalPageContent() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -68,6 +18,8 @@ export default function GlobalPage() {
     phone: '',
     details: ''
   });
+
+  const router = useRouter();
 
   useEffect(() => {
     const e = localStorage.getItem('customer_email');
@@ -84,6 +36,17 @@ export default function GlobalPage() {
         }
       }).catch(() => setName(e.split('@')[0]));
     }
+  }, []);
+
+  useEffect(() => {
+     const params = new URLSearchParams(window.location.search);
+     if (params.get('simulate') === 'true') {
+        setShowForm(true);
+        const cons = params.get('consumo');
+        if (cons) {
+            setForm(prev => ({...prev, consumo: cons }));
+        }
+     }
   }, []);
 
   const handleCotizar = async (e: React.FormEvent) => {
@@ -202,7 +165,7 @@ export default function GlobalPage() {
           {SHOWCASE_PROJECTS.map((p, idx) => {
             const Icon = p.icon;
             return (
-              <div key={idx} className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all group cursor-pointer flex flex-col">
+              <div key={p.id} onClick={() => router.push(`/dashboard/global/${p.id}`)} className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all group cursor-pointer flex flex-col">
                 <div className="h-48 overflow-hidden relative">
                   <img src={p.image} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow-sm flex items-center gap-1">
@@ -210,7 +173,7 @@ export default function GlobalPage() {
                   </div>
                 </div>
                 <div className="p-6 flex-1 flex flex-col">
-                  <h3 className="font-bold text-xl text-slate-800 mb-2">{p.title}</h3>
+                  <h3 className="font-bold text-xl text-slate-800 mb-2 group-hover:text-emerald-500 transition-colors">{p.title}</h3>
                   <p className="text-slate-500 text-sm mb-4 leading-relaxed flex-1">{p.description}</p>
                   
                   <div className="border-t border-slate-100 pt-4 grid grid-cols-3 gap-2">
@@ -235,4 +198,8 @@ export default function GlobalPage() {
       )}
     </div>
   );
+}
+
+export default function GlobalPage() {
+  return <GlobalPageContent />;
 }

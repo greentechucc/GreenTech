@@ -49,6 +49,7 @@ export class ProjectService {
       completion: data.completion || 0,
       estimated_amount: data.estimated_amount || 0,
       assigned_crew: data.assigned_crew || null,
+      assigned_auxiliaries: data.assigned_auxiliaries || [],
       planned_start_date: data.planned_start_date ? new Date(data.planned_start_date) : null,
       planned_end_date: data.planned_end_date ? new Date(data.planned_end_date) : null,
       bom_json: data.bom_json || '',
@@ -123,6 +124,7 @@ export class ProjectService {
     if (data.completion !== undefined) project.completion = data.completion;
     if (data.estimated_amount !== undefined) project.estimated_amount = data.estimated_amount;
     if (data.assigned_crew !== undefined) project.assigned_crew = data.assigned_crew;
+    if (data.assigned_auxiliaries !== undefined) project.assigned_auxiliaries = data.assigned_auxiliaries;
     if (data.planned_start_date !== undefined) project.planned_start_date = data.planned_start_date ? new Date(data.planned_start_date) : null;
     if (data.planned_end_date !== undefined) project.planned_end_date = data.planned_end_date ? new Date(data.planned_end_date) : null;
     if (data.bom_json !== undefined) project.bom_json = data.bom_json;
