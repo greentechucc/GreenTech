@@ -7,7 +7,7 @@ import { getUsers, saveUsers, getCurrentUser, roleColors, type AppUser, type Use
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
-const ROLES: UserRole[] = ['Admin', 'Asesor', 'Proyectos', 'Bodega', 'Tecnico', 'Soporte'];
+const ROLES: UserRole[] = ['Admin', 'Asesor', 'Proyectos', 'Bodega', 'Tecnico', 'Auxiliar', 'Facturas', 'Soporte'];
 
 const roleDescriptions: Record<UserRole, string> = {
   Admin: 'Acceso total a todos los módulos del sistema',
@@ -15,6 +15,8 @@ const roleDescriptions: Record<UserRole, string> = {
   Proyectos: 'Dashboard, Proyectos, Trámites',
   Bodega: 'Dashboard, Inventario',
   Tecnico: 'Dashboard, Proyectos, Monitoreo',
+  Auxiliar: 'Módulo de Proyectos Simplificado',
+  Facturas: 'Dashboard, Facturación (Exclusivo)',
   Soporte: 'Dashboard, Gestión de Tickets de Clientes',
 };
 
