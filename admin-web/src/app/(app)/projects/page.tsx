@@ -366,7 +366,7 @@ export default function ProjectsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block text-sm text-slate-400 mb-1">Cuadrilla Asignada</label>
-                {currentUser?.role === 'Tecnico' ? (
+                {(currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar') ? (
                   <div className="w-full bg-slate-900/70 border border-slate-600 rounded-xl py-2 px-4 text-slate-300 cursor-not-allowed opacity-80">
                     {form.assigned_crew || 'No asignada'}
                     <span className="text-xs text-slate-500 ml-2">(solo lectura)</span>
