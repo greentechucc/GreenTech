@@ -96,6 +96,20 @@ export class AuthService implements OnModuleInit {
     await this.userRepo.update({ email: 'tecnicocuadrillasur@greentech.com' }, { crew_name: 'Cuadrilla Beta (Sur)' });
     await this.userRepo.update({ email: 'tecnicocuadrillacentro@greentech.com' }, { crew_name: 'Cuadrilla Omega (Centro)' });
     await this.userRepo.update({ email: 'tecnicosubcontratista@greentech.com' }, { crew_name: 'Subcontratista Energía Global' });
+
+    // Asegurar que Analista Facturas exista en la BD (Producción/Render local)
+    const hasFacturas = await this.userRepo.findOneBy({ email: 'facturas@greentech.com' });
+    if (!hasFacturas) {
+      const hash = await bcrypt.hash('12345', 10);
+      await this.userRepo.save(this.userRepo.create({
+        name: 'Analista Facturas',
+        email: 'facturas@greentech.com',
+        password_hash: hash,
+        role: 'Facturas',
+        active: true,
+      }));
+      console.log('[Auth] Insertado usuario Analista Facturas en la base de datos.');
+    }
   }
 
   async login(email: string, password: string) {
