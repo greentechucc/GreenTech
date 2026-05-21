@@ -283,12 +283,16 @@ export default function ProjectsPage() {
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-bold">{p.name || p.customer_name}</h3>
               <div className="flex items-center gap-2">
-                <button onClick={() => openEditModal(p)} className="text-blue-400 hover:text-blue-300 bg-blue-400/10 hover:bg-blue-400/20 p-1.5 rounded-lg border border-blue-400/30 transition-all opacity-0 group-hover:opacity-100" title="Editar">
-                  <Edit size={14} />
-                </button>
-                <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 p-1.5 rounded-lg border border-red-400/30 transition-all opacity-0 group-hover:opacity-100" title="Eliminar">
-                  <Trash2 size={14} />
-                </button>
+                {currentUser?.role !== 'Auxiliar' && currentUser?.role !== 'Facturas' && (
+                  <button onClick={() => openEditModal(p)} className="text-blue-400 hover:text-blue-300 bg-blue-400/10 hover:bg-blue-400/20 p-1.5 rounded-lg border border-blue-400/30 transition-all opacity-0 group-hover:opacity-100" title="Editar">
+                    <Edit size={14} />
+                  </button>
+                )}
+                {currentUser?.role !== 'Auxiliar' && currentUser?.role !== 'Facturas' && currentUser?.role !== 'Tecnico' && (
+                  <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-300 bg-red-400/10 hover:bg-red-400/20 p-1.5 rounded-lg border border-red-400/30 transition-all opacity-0 group-hover:opacity-100" title="Eliminar">
+                    <Trash2 size={14} />
+                  </button>
+                )}
                 <span className="text-xs bg-slate-800 px-2 py-1 rounded text-slate-300 border border-slate-700">#{p.id}</span>
               </div>
             </div>
@@ -340,24 +344,24 @@ export default function ProjectsPage() {
         <div className="space-y-4 overflow-y-auto max-h-[70vh] p-1">
           <div>
             <label className="block text-sm text-slate-400 mb-1">Nombre del Proyecto</label>
-            <input value={form.project_name} onChange={e => setForm({...form, project_name: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="Ej: Instalación Villa Solar" />
+            <input disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} value={form.project_name} onChange={e => setForm({...form, project_name: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed" placeholder="Ej: Instalación Villa Solar" />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Cliente *</label>
-            <input value={form.customer_name} onChange={e => setForm({...form, customer_name: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="Ej: Empacadora del Norte" />
+            <input disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} value={form.customer_name} onChange={e => setForm({...form, customer_name: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed" placeholder="Ej: Empacadora del Norte" />
           </div>
           <div>
             <label className="block text-sm text-slate-400 mb-1">Email del Cliente</label>
-            <input value={form.customer_email} onChange={e => setForm({...form, customer_email: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="contacto@empresa.com" />
+            <input disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} value={form.customer_email} onChange={e => setForm({...form, customer_email: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed" placeholder="contacto@empresa.com" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400 mb-1">Tamaño del Sistema</label>
-              <input value={form.system_size} onChange={e => setForm({...form, system_size: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="Ej: 25 kWp" />
+              <input disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} value={form.system_size} onChange={e => setForm({...form, system_size: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed" placeholder="Ej: 25 kWp" />
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-1">Monto Estimado (COP)</label>
-              <input type="number" value={form.estimated_amount} onChange={e => setForm({...form, estimated_amount: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" placeholder="0" />
+              <input disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} type="number" value={form.estimated_amount} onChange={e => setForm({...form, estimated_amount: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed" placeholder="0" />
             </div>
           </div>
           
@@ -407,11 +411,11 @@ export default function ProjectsPage() {
 
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Fecha Inicio Planeada</label>
-                <input type="date" value={form.planned_start_date} onChange={e => setForm({...form, planned_start_date: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" />
+                <input disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} type="date" value={form.planned_start_date} onChange={e => setForm({...form, planned_start_date: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
               </div>
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Fecha Fin Planeada</label>
-                <input type="date" value={form.planned_end_date} onChange={e => setForm({...form, planned_end_date: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all" />
+                <input disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} type="date" value={form.planned_end_date} onChange={e => setForm({...form, planned_end_date: e.target.value})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
               </div>
             </div>
           </div>
@@ -419,11 +423,11 @@ export default function ProjectsPage() {
           <div>
             <label className="block text-sm text-slate-400 mb-1">Estado de la Fase Actual</label>
             <div className="flex gap-4">
-              <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-2/3 bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all">
+              <select disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-2/3 bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 {['CREATED', 'TECHNICAL_VISIT', 'DESIGN', 'PERMIT_PROCESS', 'APPROVED', 'INSTALLATION', 'GRID_CONNECTION', 'COMPLETED', 'ON_HOLD', 'CANCELLED'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
               </select>
               <div className="w-1/3 relative">
-                 <input type="number" min="0" max="100" value={form.completion} onChange={e => setForm({...form, completion: parseInt(e.target.value) || 0})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all pr-8" placeholder="0" />
+                 <input disabled={currentUser?.role === 'Tecnico' || currentUser?.role === 'Auxiliar' || currentUser?.role === 'Facturas'} type="number" min="0" max="100" value={form.completion} onChange={e => setForm({...form, completion: parseInt(e.target.value) || 0})} className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl py-2 px-4 text-slate-200 focus:outline-none focus:border-emerald-500 transition-all pr-8 disabled:opacity-50 disabled:cursor-not-allowed" placeholder="0" />
                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">%</span>
               </div>
             </div>
